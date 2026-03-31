@@ -1,5 +1,3 @@
-// src/logic.js
-
 export const addEntry = (entries, name, emp, periodMonth, periodYear, dateBrought) => {
   if (!name || name.trim() === '') return entries;
 

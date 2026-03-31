@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Form, Row, Col, Button, Card } from 'react-bootstrap';
+import confetti from 'canvas-confetti';
 
 const monthNames = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
@@ -36,6 +37,9 @@ function EditEntry({ entry, onClose, onSave, companies = [] }) {
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
+    }
+    if (status === 'Finished' && entry.status !== 'Finished') {
+      confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ['#FF6B00', '#198754', '#0077b6', '#f59e0b'] });
     }
     onSave({
       ...entry,

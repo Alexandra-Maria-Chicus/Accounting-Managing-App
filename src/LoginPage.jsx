@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
-
-const HARDCODED_EMAIL = 'admin@completcont.ro';
-const HARDCODED_PASSWORD = 'admin123';
+import { findUser } from './users';
 
 function LoginPage({ onLoginSuccess, onGoToRegister, registeredUsers = [] }) {
   const [email, setEmail] = useState('');
@@ -36,12 +34,10 @@ function LoginPage({ onLoginSuccess, onGoToRegister, registeredUsers = [] }) {
     }
     setErrors({});
     setLoading(true);
-    // Simulate a small delay for UX
     setTimeout(() => {
-      const isAdmin = email === HARDCODED_EMAIL && password === HARDCODED_PASSWORD;
-      const isRegistered = registeredUsers.some(u => u.email === email && u.password === password);
-      if (isAdmin || isRegistered) {
-        onLoginSuccess();
+      const user = findUser(email, password, registeredUsers);
+      if (user) {
+        onLoginSuccess(user);
       } else {
         setAuthError('Incorrect email or password. Please try again.');
         setLoading(false);
@@ -54,7 +50,6 @@ function LoginPage({ onLoginSuccess, onGoToRegister, registeredUsers = [] }) {
       style={{ backgroundColor: '#f8f9fa' }}>
       <Container style={{ maxWidth: '440px' }}>
 
-        {/* Logo + brand */}
         <div className="text-center mb-4">
           <img src="logo.png" alt="Logo" height="64" className="mb-2" />
           <div className="fw-bold fs-4" style={{ color: '#FF6B00' }}>Complet Cont</div>
@@ -73,7 +68,7 @@ function LoginPage({ onLoginSuccess, onGoToRegister, registeredUsers = [] }) {
               <Form.Label className="small fw-bold text-muted text-uppercase">Email</Form.Label>
               <Form.Control
                 type="email"
-                placeholder="admin@completcont.ro"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })); }}
                 isInvalid={!!errors.email}
@@ -116,10 +111,9 @@ function LoginPage({ onLoginSuccess, onGoToRegister, registeredUsers = [] }) {
         </Card>
 
         <div className="text-center mt-3 small text-muted">
-          <span className="me-1">Demo credentials:</span>
-          <code style={{ color: '#FF6B00' }}>admin@completcont.ro</code>
-          <span className="mx-1">/</span>
-          <code style={{ color: '#FF6B00' }}>admin123</code>
+          Admin: <code style={{ color: '#FF6B00' }}>admin@completcont.ro</code> / <code style={{ color: '#FF6B00' }}>admin123</code><br />
+          Employee: <code style={{ color: '#FF6B00' }}>maria@completcont.ro</code> / <code style={{ color: '#FF6B00' }}>employee123</code><br />
+          Client: <code style={{ color: '#FF6B00' }}>j.doe@acme.com</code> / <code style={{ color: '#FF6B00' }}>client123</code>
         </div>
       </Container>
     </div>

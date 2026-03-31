@@ -1,5 +1,3 @@
-// periodMonth/periodYear = the accounting period the documents are FOR
-// dateBrought = the actual date the client physically brought the papers in
 export const recordsData = [
   { id: 1,  firm: "Acme Corporation",  status: "Finished",    periodMonth: 2, periodYear: 2026, dateBrought: new Date(2026, 3, 5),  employee: "Sarah Johnson" },
   { id: 2,  firm: "TechStart Inc.",    status: "In Progress", periodMonth: 2, periodYear: 2026, dateBrought: new Date(2026, 3, 8),  employee: "Michael Chen" },

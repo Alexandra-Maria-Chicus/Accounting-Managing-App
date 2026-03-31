@@ -12,7 +12,6 @@ function AddEntry({ onClose, onSave, companies = [] }) {
   const [acctYear, setAcctYear] = useState(now.getFullYear());
   const [errors, setErrors] = useState({});
 
-  // Only allow years up to current year
   const years = [];
   for (let y = 2024; y <= now.getFullYear(); y++) years.push(y);
 
@@ -31,7 +30,6 @@ function AddEntry({ onClose, onSave, companies = [] }) {
       setErrors(validationErrors);
       return;
     }
-    // dateBrought is automatically today
     onSave(firmName, employee, acctMonth, acctYear, new Date());
   };
 

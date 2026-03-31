@@ -44,7 +44,7 @@ function RegisterPage({ onGoToLogin, onRegister }) {
       return;
     }
     setErrors({});
-    onRegister({ email: fields.email, password: fields.password, name: fields.name });
+    onRegister({ id: Date.now(), email: fields.email, password: fields.password, name: fields.name, role: 'employee', companyName: null });
     setSuccess(true);
     setTimeout(() => onGoToLogin(), 2000);
   };

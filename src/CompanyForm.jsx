@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 import { validateCompany } from './companiesLogic';
 
-// Shared form used by both Add and Edit company views
 function CompanyForm({ initial, allCompanies, editingId, onSave, onClose, title }) {
   const [fields, setFields] = useState(
     initial || { name: '', email: '', phone: '', address: '', contactName: '', contactEmail: '' }

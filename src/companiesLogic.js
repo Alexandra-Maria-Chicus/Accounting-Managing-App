@@ -1,4 +1,3 @@
-// Validation rules for company fields
 export const validateCompany = (fields, allCompanies, editingId = null) => {
   const errors = {};
 
@@ -55,6 +54,7 @@ export const addCompany = (companies, fields) => {
       name: fields.contactName.trim(),
       email: fields.contactEmail.trim(),
     },
+    observations: [],
   };
   return [...companies, newCompany];
 };
@@ -79,4 +79,36 @@ export const updateCompany = (companies, id, fields) => {
 
 export const deleteCompany = (companies, id) => {
   return companies.filter(c => c.id !== id);
+};
+
+export const addObservation = (companies, companyId, text, authorName, id = Date.now()) => {
+  return companies.map(c =>
+    c.id !== companyId ? c : {
+      ...c,
+      observations: [
+        ...c.observations,
+        { id, text: text.trim(), checked: false, createdAt: new Date().toISOString(), author: authorName },
+      ],
+    }
+  );
+};
+
+export const toggleObservation = (companies, companyId, observationId) => {
+  return companies.map(c =>
+    c.id !== companyId ? c : {
+      ...c,
+      observations: c.observations.map(o =>
+        o.id !== observationId ? o : { ...o, checked: !o.checked }
+      ),
+    }
+  );
+};
+
+export const deleteObservation = (companies, companyId, observationId) => {
+  return companies.map(c =>
+    c.id !== companyId ? c : {
+      ...c,
+      observations: c.observations.filter(o => o.id !== observationId),
+    }
+  );
 };
