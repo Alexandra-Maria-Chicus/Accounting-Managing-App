@@ -27,14 +27,20 @@ export const loadPeriodPreference = () => {
   return getCookie('preferred_period');
 };
 
-export const trackPageVisit = (pageName) => {
-  const activity = getCookie('page_activity') || {};
-  activity[pageName] = (activity[pageName] || 0) + 1;
-  activity['last_visited'] = pageName;
-  activity['last_visit_time'] = new Date().toISOString();
-  setCookie('page_activity', activity, 30);
+export const saveCurrentUser = (user) => {
+  setCookie('current_user', {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    companyName: user.companyName,
+    name: user.name,
+  }, 1);
 };
 
-export const getPageActivity = () => {
-  return getCookie('page_activity') || {};
+export const loadCurrentUser = () => {
+  return getCookie('current_user');
+};
+
+export const clearCurrentUser = () => {
+  deleteCookie('current_user');
 };

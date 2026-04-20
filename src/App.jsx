@@ -8,7 +8,7 @@ import RegisterPage from './RegisterPage';
 import CompaniesAdmin from './CompaniesAdmin';
 import { addEntry, deleteEntry } from './logic';
 import { recordsData } from './data'
-import { savePeriodPreference, loadPeriodPreference, trackPageVisit } from './cookies'
+import { savePeriodPreference, loadPeriodPreference, saveCurrentUser, loadCurrentUser, clearCurrentUser } from './cookies'
 import CompanyPage from './CompanyPage';
 import { companiesData as initialCompanies } from './companies';
 import { addObservation, toggleObservation, deleteObservation } from './companiesLogic';
@@ -17,8 +17,8 @@ import { Container, Card, Table, Form, Row, Col, Button, Badge, Nav, Navbar } fr
 
 const STATUS_STYLE = {
   'Finished':    { backgroundColor: '#198754', color: '#fff' },
-  'In Progress': { backgroundColor: '#0077b6', color: '#fff' },
-  'Not Started': { backgroundColor: '#64748b', color: '#fff' },
+  'In Progress': { backgroundColor: '#FF6B00', color: '#fff' },
+  'Not Started': { backgroundColor: '#0077b6', color: '#fff' },
 };
 
 const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -28,23 +28,30 @@ function App() {
   const [entries, setEntries] = useState(recordsData);
   const [companies, setCompanies] = useState(initialCompanies);
   const [registeredUsers, setRegisteredUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+  const savedUser = loadCurrentUser();
+  const [currentUser, setCurrentUser] = useState(savedUser || null);
 
   const now = new Date();
   const savedPeriod = loadPeriodPreference();
   const [selectedMonth, setSelectedMonth] = useState(savedPeriod?.month ?? now.getMonth());
   const [selectedYear, setSelectedYear] = useState(savedPeriod?.year ?? now.getFullYear());
   const [editingEntry, setEditingEntry] = useState(null);
-  const [selectedFirmData, setSelectedFirmData] = useState(null);
+  const [selectedFirmData, setSelectedFirmData] = useState(() => {
+    if (savedUser?.role === 'client') {
+      return initialCompanies.find(c => c.name === savedUser.companyName) || null;
+    }
+    return null;
+  });
   const [detailBackView, setDetailBackView] = useState('table');
   const [deletingEntryId, setDeletingEntryId] = useState(null);
-  const [view, setView] = useState('home');
+  const [slidingOutId, setSlidingOutId] = useState(null);
+  const [view, setView] = useState(() => {
+    if (!savedUser) return 'home';
+    if (savedUser.role === 'client') return 'details';
+    return 'table';
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 5;
-
-  useEffect(() => {
-    trackPageVisit(view);
-  }, [view]);
 
   useEffect(() => {
     savePeriodPreference(selectedMonth, selectedYear);
@@ -58,6 +65,7 @@ function App() {
   }, [companies]);
 
   const handleLoginSuccess = (user) => {
+    saveCurrentUser(user);
     setCurrentUser(user);
     if (user.role === 'client') {
       const firmData = companies.find(c => c.name === user.companyName);
@@ -74,6 +82,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    clearCurrentUser();
     setCurrentUser(null);
     setView('home');
   };
@@ -94,8 +103,13 @@ function App() {
   };
 
   const confirmDelete = () => {
-    setEntries(deleteEntry(entries, deletingEntryId));
+    const id = deletingEntryId;
     setDeletingEntryId(null);
+    setSlidingOutId(id);
+    setTimeout(() => {
+      setEntries(prev => deleteEntry(prev, id));
+      setSlidingOutId(null);
+    }, 600);
   };
 
   const handleSave = (name, emp, periodMonth, periodYear, dateBrought) => {
@@ -179,21 +193,25 @@ function App() {
 
             <Navbar.Collapse id="main-nav">
               {!isClient && (
-                <Nav className="me-auto gap-1 mt-2 mt-lg-0">
-                  <Button
-                    variant="link"
-                    className={`fw-bold shadow-none text-decoration-none px-3 py-2 rounded-3 ${view === 'table' ? 'text-dark bg-light' : 'text-muted'}`}
-                    onClick={() => setView('table')}
-                  >
-                    Documents
-                  </Button>
-                  <Button
-                    variant="link"
-                    className={`fw-bold shadow-none text-decoration-none px-3 py-2 rounded-3 ${view === 'companies' ? 'text-dark bg-light' : 'text-muted'}`}
-                    onClick={() => setView('companies')}
-                  >
-                    Companies
-                  </Button>
+                <Nav className="me-auto mt-2 mt-lg-0">
+                  <div className="nav-pill-track">
+                    <div
+                      className="nav-pill"
+                      style={{ transform: view === 'companies' ? 'translateX(100%)' : 'translateX(0)' }}
+                    />
+                    <button
+                      className={`nav-pill-btn${view === 'table' ? ' active' : ''}`}
+                      onClick={() => setView('table')}
+                    >
+                      Documents
+                    </button>
+                    <button
+                      className={`nav-pill-btn${view === 'companies' ? ' active' : ''}`}
+                      onClick={() => setView('companies')}
+                    >
+                      Companies
+                    </button>
+                  </div>
                 </Nav>
               )}
 
@@ -276,8 +294,8 @@ function App() {
                       </Form.Group>
                     </Col>
 
-                    {(isAdmin || isEmployee) && (
-                      <Col xs={12} md="auto" className="ms-md-auto">
+                    <Col xs={12} md="auto" className="ms-md-auto d-flex gap-2 align-items-center">
+                      {(isAdmin || isEmployee) && (
                         <Button
                           className="px-4 py-2 fw-bold shadow-none rounded-3 border-0"
                           style={{ backgroundColor: '#FF6B00', fontSize: '0.85rem' }}
@@ -285,8 +303,8 @@ function App() {
                         >
                           + Add New Entry
                         </Button>
-                      </Col>
-                    )}
+                      )}
+                    </Col>
                   </Row>
                 </Card>
 
@@ -306,7 +324,7 @@ function App() {
                     </thead>
                     <tbody>
                       {pagedEntries.map((item) => (
-                        <tr key={item.id} className="align-middle">
+                        <tr key={item.id} className={`align-middle${slidingOutId === item.id ? ' row-slide-out' : ''}`}>
                           <td
                             className="ps-4 fw-medium"
                             style={{ cursor: 'pointer', color: '#FF6B00' }}
