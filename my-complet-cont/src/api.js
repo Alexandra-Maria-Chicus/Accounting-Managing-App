@@ -114,3 +114,11 @@ export function toggleObservation(companyId, obsId) {
 export function deleteObservation(companyId, obsId) {
   return apiFetch(`/companies/${companyId}/observations/${obsId}`, { method: 'DELETE' });
 }
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+export function loginUser(email, password) {
+  return apiFetch('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+}

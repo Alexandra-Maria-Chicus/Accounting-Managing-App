@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
-import { findUser } from './users';
+import { loginUser } from './api';
 
-function LoginPage({ onLoginSuccess, onGoToRegister, registeredUsers = [] }) {
+function LoginPage({ onLoginSuccess, onGoToRegister}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -24,7 +24,7 @@ function LoginPage({ onLoginSuccess, onGoToRegister, registeredUsers = [] }) {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
     const validationErrors = validate();
@@ -34,15 +34,14 @@ function LoginPage({ onLoginSuccess, onGoToRegister, registeredUsers = [] }) {
     }
     setErrors({});
     setLoading(true);
-    setTimeout(() => {
-      const user = findUser(email, password, registeredUsers);
-      if (user) {
-        onLoginSuccess(user);
-      } else {
-        setAuthError('Incorrect email or password. Please try again.');
-        setLoading(false);
-      }
-    }, 600);
+    try {
+      const user = await loginUser(email, password);
+      onLoginSuccess(user);
+    } catch (e) {
+      setAuthError('Incorrect email or password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
