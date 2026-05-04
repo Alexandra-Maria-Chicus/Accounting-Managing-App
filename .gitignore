@@ -1,0 +1,13 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Environment files
+backend/.env
+.env
+
+# Ignore specific files/folders
+Assignment0/
+app description.txt

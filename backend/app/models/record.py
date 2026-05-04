@@ -1,14 +1,15 @@
 from typing import Literal
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class RecordBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     firm: str
     employee: str
     status: Literal["Not Started", "In Progress", "Finished"]
     periodMonth: int
     periodYear: int
-    dateBrought: str  # ISO date string YYYY-MM-DD
+    dateBrought: str
 
     @field_validator("firm")
     @classmethod

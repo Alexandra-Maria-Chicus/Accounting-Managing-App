@@ -5,7 +5,8 @@ from typing import Optional
 
 from faker import Faker
 
-from app import store
+from app.db.session import SessionLocal
+from app.db.models import Record, Company
 from app.ws.manager import ws_manager
 
 fake = Faker()
@@ -28,20 +29,38 @@ async def _loop() -> None:
         if not _running:
             break
 
-        firm_names = [c["name"] for c in store.companies] or ["Sample Corp"]
-        batch = []
-        for _ in range(5):
-            record = {
-                "id": store.next_id("records"),
-                "firm": random.choice(firm_names),
-                "employee": random.choice(_EMPLOYEES),
-                "status": random.choice(_STATUSES),
-                "periodMonth": random.randint(0, 11),
-                "periodYear": random.choice([2025, 2026]),
-                "dateBrought": date.today().isoformat(),
-            }
-            store.records.insert(0, record)
-            batch.append(record)
+        db = SessionLocal()
+        try:
+            firm_names = [c.name for c in db.query(Company).all()] or ["Sample Corp"]
+            batch = []
+            for _ in range(5):
+                record = Record(
+                    firm=random.choice(firm_names),
+                    employee=random.choice(_EMPLOYEES),
+                    status=random.choice(_STATUSES),
+                    period_month=random.randint(0, 11),
+                    period_year=random.choice([2025, 2026]),
+                    date_brought=date.today().isoformat(),
+                )
+                db.add(record)
+            db.commit()
+
+            # fetch the batch to broadcast
+            records = db.query(Record).order_by(Record.id.desc()).limit(5).all()
+            batch = [
+                {
+                    "id": r.id,
+                    "firm": r.firm,
+                    "employee": r.employee,
+                    "status": r.status,
+                    "periodMonth": r.period_month,
+                    "periodYear": r.period_year,
+                    "dateBrought": r.date_brought,
+                }
+                for r in records
+            ]
+        finally:
+            db.close()
 
         await ws_manager.broadcast({"type": "new_records", "data": batch})
 

@@ -1,81 +1,108 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from sqlalchemy.orm import Session
 
-from app import store
+from app.db.models import Company, ContactPerson, Observation
 from app.models.company import CompanyCreate, CompanyUpdate, ObservationCreate
 
 
-def get_all() -> List[Dict]:
-    return store.companies
+def get_all(db: Session) -> List[Company]:
+    return db.query(Company).all()
 
 
-def get_by_id(company_id: int) -> Optional[Dict]:
-    return next((c for c in store.companies if c["id"] == company_id), None)
+def get_by_id(db: Session, company_id: int) -> Optional[Company]:
+    return db.query(Company).filter(Company.id == company_id).first()
 
 
-def create(data: CompanyCreate) -> Dict:
-    if any(c["name"].lower() == data.name.lower() for c in store.companies):
+def create(db: Session, data: CompanyCreate) -> Company:
+    if db.query(Company).filter(Company.name.ilike(data.name)).first():
         raise ValueError(f"Company with name '{data.name}' already exists")
-    new_company = {"id": store.next_id("companies"), **data.model_dump(), "observations": []}
-    store.companies.append(new_company)
-    return new_company
+    company = Company(
+        name=data.name,
+        phone=data.phone,
+        email=data.email,
+        address=data.address,
+    )
+    db.add(company)
+    db.flush()
+    contact = ContactPerson(
+        company_id=company.id,
+        name=data.contactPerson.name,
+        email=data.contactPerson.email,
+    )
+    db.add(contact)
+    db.commit()
+    db.refresh(company)
+    return company
 
 
-def update(company_id: int, data: CompanyUpdate) -> Optional[Dict]:
-    if any(
-        c["name"].lower() == data.name.lower() and c["id"] != company_id
-        for c in store.companies
-    ):
-        raise ValueError(f"Company with name '{data.name}' already exists")
-    for i, c in enumerate(store.companies):
-        if c["id"] == company_id:
-            store.companies[i] = {
-                "id": company_id,
-                **data.model_dump(),
-                "observations": c["observations"],
-            }
-            return store.companies[i]
-    return None
-
-
-def delete(company_id: int) -> bool:
-    for i, c in enumerate(store.companies):
-        if c["id"] == company_id:
-            store.companies.pop(i)
-            return True
-    return False
-
-
-def add_observation(company_id: int, data: ObservationCreate) -> Optional[Dict]:
-    company = get_by_id(company_id)
+def update(db: Session, company_id: int, data: CompanyUpdate) -> Optional[Company]:
+    company = get_by_id(db, company_id)
     if not company:
         return None
-    obs: Dict[str, Any] = {
-        "id": store.next_id("observations"),
-        "text": data.text,
-        "author": data.author,
-        "checked": False,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-    }
-    company["observations"].append(obs)
+    duplicate = db.query(Company).filter(
+        Company.name.ilike(data.name),
+        Company.id != company_id
+    ).first()
+    if duplicate:
+        raise ValueError(f"Company with name '{data.name}' already exists")
+    company.name = data.name
+    company.phone = data.phone
+    company.email = data.email
+    company.address = data.address
+    company.contactPerson.name = data.contactPerson.name
+    company.contactPerson.email = data.contactPerson.email
+    db.commit()
+    db.refresh(company)
+    return company
+
+
+def delete(db: Session, company_id: int) -> bool:
+    company = get_by_id(db, company_id)
+    if not company:
+        return False
+    db.delete(company)
+    db.commit()
+    return True
+
+
+def add_observation(db: Session, company_id: int, data: ObservationCreate) -> Optional[Observation]:
+    company = get_by_id(db, company_id)
+    if not company:
+        return None
+    obs = Observation(
+        company_id=company_id,
+        text=data.text,
+        author=data.author,
+        checked=False,
+        createdAt=datetime.now(timezone.utc),
+    )
+    db.add(obs)
+    db.commit()
+    db.refresh(obs)
     return obs
 
 
-def toggle_observation(company_id: int, obs_id: int) -> Optional[Dict]:
-    company = get_by_id(company_id)
-    if not company:
+def toggle_observation(db: Session, company_id: int, obs_id: int) -> Optional[Observation]:
+    obs = db.query(Observation).filter(
+        Observation.id == obs_id,
+        Observation.company_id == company_id
+    ).first()
+    if not obs:
         return None
-    for obs in company["observations"]:
-        if obs["id"] == obs_id:
-            obs["checked"] = not obs["checked"]
-            return obs
-    return None
+    obs.checked = not obs.checked
+    db.commit()
+    db.refresh(obs)
+    return obs
 
 
-def delete_observation(company_id: int, obs_id: int) -> bool:
-    company = get_by_id(company_id)
-    if not company:
+def delete_observation(db: Session, company_id: int, obs_id: int) -> bool:
+    obs = db.query(Observation).filter(
+        Observation.id == obs_id,
+        Observation.company_id == company_id
+    ).first()
+    if not obs:
         return False
-    before = len(company["observations"])
-    company["observations"] = [o for o in company["observations"] if o["id"] != obs_id]
-    return len(company["observations"]) < before
+    db.delete(obs)
+    db.commit()
+    return True

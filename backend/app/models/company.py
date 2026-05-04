@@ -1,19 +1,31 @@
 import re
 from typing import List
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict, Field
 
 
 class ContactPerson(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     name: str
     email: str
 
 
+from pydantic import field_validator
+from datetime import datetime
+
 class Observation(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     text: str
     checked: bool
     createdAt: str
     author: str
+
+    @field_validator("createdAt", mode="before")
+    @classmethod
+    def convert_datetime(cls, v):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return str(v) if v else ""
 
 
 class ObservationCreate(BaseModel):
@@ -38,11 +50,12 @@ class ObservationCreate(BaseModel):
 
 
 class CompanyBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
     name: str
     phone: str
     email: str
     address: str
-    contactPerson: ContactPerson
+    contactPerson: ContactPerson = Field(alias="contact_person")
 
     @field_validator("name")
     @classmethod
@@ -86,5 +99,6 @@ class CompanyUpdate(CompanyBase):
 
 
 class Company(CompanyBase):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     observations: List[Observation] = []
