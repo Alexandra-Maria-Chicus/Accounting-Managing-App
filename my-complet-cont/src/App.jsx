@@ -6,6 +6,7 @@ import Home from './Home'
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
 import CompaniesAdmin from './CompaniesAdmin';
+import Chat from './Chat';
 import * as api from './api';
 import { savePeriodPreference, loadPeriodPreference, saveCurrentUser, loadCurrentUser, clearCurrentUser } from './cookies'
 import CompanyPage from './CompanyPage';
@@ -42,6 +43,7 @@ function App() {
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingOps, setPendingOps] = useState(() => api.getQueue().length);
+  const [showChat, setShowChat] = useState(false);
 
   // page cursor for infinite scroll
   const pageRef = useRef(1);
@@ -408,6 +410,7 @@ function App() {
                     <span className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>{currentUser?.role}</span>
                   </div>
                 </div>
+                <Button variant="link" className="text-muted p-0 ms-1 shadow-none" title="Team Chat" onClick={() => setShowChat(prev => !prev)}>💬</Button>
                 <Button variant="link" className="text-muted p-0 ms-1 shadow-none" title="Log out" onClick={handleLogout}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -567,6 +570,11 @@ function App() {
 
           </Container>
         </>
+      )}
+      {showChat && isAppView && currentUser && (
+        <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '380px', zIndex: 1000 }}>
+          <Chat currentUser={currentUser} />
+        </div>
       )}
     </>
   );
