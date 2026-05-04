@@ -1,8 +1,8 @@
 from app.db.session import SessionLocal
-from app.db.models import Company, ContactPerson, Record
+from app.db.models import Company, ContactPerson, Record, User, Role, Permission, RolePermission
+from app.services.auth_service import hash_password
 
-def seed():
-    db = SessionLocal()
+def seed_companies_and_records(db):
     try:
         if db.query(Company).count() > 0:
             print("Already seeded, skipping.")
@@ -60,5 +60,73 @@ def seed():
     finally:
         db.close()
 
+
+def seed_roles_and_users(db):
+    if db.query(Role).count() > 0:
+        print("Roles already seeded, skipping.")
+        return
+
+    # Create roles
+    admin_role = Role(name="admin")
+    employee_role = Role(name="employee")
+    client_role = Role(name="client")
+    db.add_all([admin_role, employee_role, client_role])
+    db.flush()
+
+    # Create permissions
+    permissions = [
+        Permission(name="read_records"),
+        Permission(name="write_records"),
+        Permission(name="delete_records"),
+        Permission(name="manage_companies"),
+        Permission(name="view_own_company"),
+    ]
+    db.add_all(permissions)
+    db.flush()
+
+    # Assign permissions to roles
+    perm_map = {p.name: p.id for p in db.query(Permission).all()}
+    admin_perms = ["read_records", "write_records", "delete_records", "manage_companies"]
+    employee_perms = ["read_records", "write_records"]
+    client_perms = ["view_own_company"]
+
+    for pname in admin_perms:
+        db.add(RolePermission(role_id=admin_role.id, permission_id=perm_map[pname]))
+    for pname in employee_perms:
+        db.add(RolePermission(role_id=employee_role.id, permission_id=perm_map[pname]))
+    for pname in client_perms:
+        db.add(RolePermission(role_id=client_role.id, permission_id=perm_map[pname]))
+
+    db.flush()
+
+    role_map = {r.name: r.id for r in db.query(Role).all()}
+    company_map = {c.name: c.id for c in db.query(Company).all()}
+
+    # Create users
+    users = [
+        User(email="admin@completcont.ro", password_hash=hash_password("admin123"), name="Admin", role_id=role_map["admin"], company_id=None),
+        User(email="maria@completcont.ro", password_hash=hash_password("employee123"), name="Maria Chicus", role_id=role_map["employee"], company_id=None),
+        User(email="sarah@completcont.ro", password_hash=hash_password("employee123"), name="Sarah Johnson", role_id=role_map["employee"], company_id=None),
+        User(email="michael@completcont.ro", password_hash=hash_password("employee123"), name="Michael Chen", role_id=role_map["employee"], company_id=None),
+        User(email="finance@valleyedu.org", password_hash=hash_password("client123"), name="Dr. Sarah Mitchell", role_id=role_map["client"], company_id=company_map.get("Valley Education")),
+        User(email="j.doe@acme.com", password_hash=hash_password("client123"), name="John Doe", role_id=role_map["client"], company_id=company_map.get("Acme Corporation")),
+        User(email="alice@techstart.io", password_hash=hash_password("client123"), name="Alice Vance", role_id=role_map["client"], company_id=company_map.get("TechStart Inc.")),
+        User(email="m.stevens@global.ro", password_hash=hash_password("client123"), name="Mark Stevens", role_id=role_map["client"], company_id=company_map.get("Global Logistics")),
+        User(email="e.popescu@riverside.med", password_hash=hash_password("client123"), name="Elena Popescu", role_id=role_map["client"], company_id=company_map.get("Riverside Medical")),
+        User(email="g.marin@downtown.ro", password_hash=hash_password("client123"), name="George Marin", role_id=role_map["client"], company_id=company_map.get("Downtown Retail")),
+        User(email="ana@mtncoffee.com", password_hash=hash_password("client123"), name="Ana Maria", role_id=role_map["client"], company_id=company_map.get("Mountain Coffee")),
+        User(email="v.ionescu@prectech.ro", password_hash=hash_password("client123"), name="Victor Ionescu", role_id=role_map["client"], company_id=company_map.get("Precision Tech")),
+        User(email="laura@bluewave.ro", password_hash=hash_password("client123"), name="Laura Dumitru", role_id=role_map["client"], company_id=company_map.get("Blue Wave Agency")),
+        User(email="r.filipescu@greenenergy.ro", password_hash=hash_password("client123"), name="Radu Filipescu", role_id=role_map["client"], company_id=company_map.get("Green Energy Solutions")),
+    ]
+    db.add_all(users)
+    db.commit()
+    print("Roles and users seeded successfully.")
+
 if __name__ == "__main__":
-    seed()
+    db = SessionLocal()
+    try:
+        seed_companies_and_records(db)
+        seed_roles_and_users(db)
+    finally:
+        db.close()

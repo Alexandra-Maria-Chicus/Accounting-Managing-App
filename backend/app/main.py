@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import records, companies, generator, ws_router
+from app.routers import records, companies, generator, ws_router, auth
 from app.routers.graphql_router import graphql_app
 
 app = FastAPI(title="Complet Cont API", version="1.0.0")
@@ -18,6 +18,7 @@ app.include_router(records.router)
 app.include_router(companies.router)
 app.include_router(generator.router)
 app.include_router(ws_router.router)
+app.include_router(auth.router)
 app.include_router(graphql_app, prefix="/graphql")
 
 
