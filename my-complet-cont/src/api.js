@@ -42,8 +42,18 @@ export async function flushQueue() {
 // ── Core fetch ────────────────────────────────────────────────────────────────
 
 async function apiFetch(path, options = {}) {
+  const currentUser = JSON.parse(
+    document.cookie.split('; ').find(r => r.startsWith('current_user='))?.split('=').slice(1).join('=') 
+    ? decodeURIComponent(document.cookie.split('; ').find(r => r.startsWith('current_user='))?.split('=').slice(1).join('='))
+    : '{}'
+  ) || {};
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-Email': currentUser.email || 'anonymous',
+      'X-User-Role': currentUser.role || 'unknown',
+    },
     ...options,
   });
   if (!res.ok) {

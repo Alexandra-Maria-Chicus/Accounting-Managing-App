@@ -12,3 +12,5 @@ class User(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     role = relationship("Role", back_populates="users")
     company = relationship("Company")
+    logs = relationship("Log", back_populates="user")
+    suspicious_flags = relationship("SuspiciousUser", back_populates="user")

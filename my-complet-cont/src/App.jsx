@@ -6,6 +6,7 @@ import Home from './Home'
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
 import CompaniesAdmin from './CompaniesAdmin';
+import AdminLogs from './AdminLogs';
 import Chat from './Chat';
 import * as api from './api';
 import { savePeriodPreference, loadPeriodPreference, saveCurrentUser, loadCurrentUser, clearCurrentUser } from './cookies'
@@ -44,6 +45,7 @@ function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingOps, setPendingOps] = useState(() => api.getQueue().length);
   const [showChat, setShowChat] = useState(false);
+  
 
   // page cursor for infinite scroll
   const pageRef = useRef(1);
@@ -368,7 +370,7 @@ function App() {
       {view === 'home' && <Home onGetStarted={() => setView('login')} onLogin={() => setView('login')} onRegister={() => setView('register')} />}
       {view === 'login' && <LoginPage onLoginSuccess={handleLoginSuccess} onGoToRegister={() => setView('register')} registeredUsers={registeredUsers} />}
       {view === 'register' && <RegisterPage onGoToLogin={() => setView('login')} onRegister={(user) => setRegisteredUsers(prev => [...prev, user])} />}
-
+      
       {isAppView && (
         <>
           {!isOnline && (
@@ -390,34 +392,38 @@ function App() {
             </Navbar.Brand>
             {!isClient && <Navbar.Toggle aria-controls="main-nav" className="border-0 shadow-none" />}
             <Navbar.Collapse id="main-nav">
-              {!isClient && (
-                <Nav className="me-auto mt-2 mt-lg-0">
-                  <div className="nav-pill-track">
-                    <div className="nav-pill" style={{ transform: view === 'companies' ? 'translateX(100%)' : 'translateX(0)' }} />
-                    <button className={`nav-pill-btn${view === 'table' ? ' active' : ''}`} onClick={() => setView('table')}>Documents</button>
-                    <button className={`nav-pill-btn${view === 'companies' ? ' active' : ''}`} onClick={() => setView('companies')}>Companies</button>
-                  </div>
-                </Nav>
-              )}
-              <Nav className={`align-items-center d-flex gap-3 mt-2 mt-lg-0 ${isClient ? 'ms-auto' : ''}`}>
-                <div className="d-flex align-items-center gap-2">
-                  <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || 'User')}&background=FF6B00&color=fff`}
-                    alt="Profile" className="rounded-circle border" width="36" height="36"
-                  />
-                  <div className="navbar-user-label">
-                    <span className="fw-bold d-block" style={{ fontSize: '0.85rem', color: '#1a1a1a' }}>{currentUser?.name || 'User'}</span>
-                    <span className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>{currentUser?.role}</span>
-                  </div>
-                </div>
-                <Button variant="link" className="text-muted p-0 ms-1 shadow-none" title="Team Chat" onClick={() => setShowChat(prev => !prev)}>💬</Button>
-                <Button variant="link" className="text-muted p-0 ms-1 shadow-none" title="Log out" onClick={handleLogout}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
-                </Button>
-              </Nav>
-            </Navbar.Collapse>
+  {!isClient && (
+    <Nav className="me-auto mt-2 mt-lg-0">
+      <div className="nav-pill-track">
+        <div className="nav-pill" style={{ 
+          transform: view === 'logs' ? 'translateX(200%)' : view === 'companies' ? 'translateX(100%)' : 'translateX(0)',
+          width: isAdmin ? 'calc(33.33% - 4px)' : 'calc(50% - 4px)'
+        }} />
+        <button className={`nav-pill-btn${view === 'table' ? ' active' : ''}`} onClick={() => setView('table')}>Documents</button>
+        <button className={`nav-pill-btn${view === 'companies' ? ' active' : ''}`} onClick={() => setView('companies')}>Companies</button>
+        {isAdmin && <button className={`nav-pill-btn${view === 'logs' ? ' active' : ''}`} onClick={() => setView('logs')}>Logs</button>}
+      </div>
+    </Nav>
+  )}
+  <Nav className={`align-items-center d-flex gap-3 mt-2 mt-lg-0 ${isClient ? 'ms-auto' : ''}`}>
+    <div className="d-flex align-items-center gap-2">
+      <img
+        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || 'User')}&background=FF6B00&color=fff`}
+        alt="Profile" className="rounded-circle border" width="36" height="36"
+      />
+      <div className="navbar-user-label">
+        <span className="fw-bold d-block" style={{ fontSize: '0.85rem', color: '#1a1a1a' }}>{currentUser?.name || 'User'}</span>
+        <span className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>{currentUser?.role}</span>
+      </div>
+    </div>
+    <Button variant="link" className="text-muted p-0 ms-1 shadow-none" title="Team Chat" onClick={() => setShowChat(prev => !prev)}>💬</Button>
+    <Button variant="link" className="text-muted p-0 ms-1 shadow-none" title="Log out" onClick={handleLogout}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </Button>
+  </Nav>
+</Navbar.Collapse>
           </Navbar>
 
           <Container fluid="lg" className="py-4 py-md-5 px-3 px-md-4">
@@ -567,6 +573,7 @@ function App() {
                 isAdmin={isAdmin}
               />
             )}
+            {view === 'logs' && isAdmin && <AdminLogs />}
 
           </Container>
         </>
