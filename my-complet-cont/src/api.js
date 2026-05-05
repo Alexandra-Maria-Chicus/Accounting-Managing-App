@@ -1,4 +1,5 @@
-const BASE = 'http://localhost:8000';
+//const BASE = 'http://localhost:8000';
+const BASE = import.meta.env.VITE_API_BASE || 'http://192.168.1.131:8000';
 const QUEUE_KEY = 'complet_cont_offline_queue';
 
 
@@ -40,13 +41,14 @@ export async function flushQueue() {
 }
 
 // ── Core fetch ────────────────────────────────────────────────────────────────
-
 async function apiFetch(path, options = {}) {
-  const currentUser = JSON.parse(
-    document.cookie.split('; ').find(r => r.startsWith('current_user='))?.split('=').slice(1).join('=') 
-    ? decodeURIComponent(document.cookie.split('; ').find(r => r.startsWith('current_user='))?.split('=').slice(1).join('='))
-    : '{}'
-  ) || {};
+  let currentUser = {};
+  try {
+    const match = document.cookie.split('; ').find(r => r.startsWith('current_user='));
+    if (match) {
+      currentUser = JSON.parse(decodeURIComponent(match.split('=').slice(1).join('=')));
+    }
+  } catch { currentUser = {}; }
 
   const res = await fetch(`${BASE}${path}`, {
     headers: {
@@ -63,7 +65,6 @@ async function apiFetch(path, options = {}) {
   if (res.status === 204) return null;
   return res.json();
 }
-
 // ── Records ───────────────────────────────────────────────────────────────────
 
 export function fetchRecords({ page = 1, pageSize = 5, month, year } = {}) {

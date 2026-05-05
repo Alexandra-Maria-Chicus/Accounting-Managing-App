@@ -10,8 +10,8 @@ function Chat({ currentUser }) {
   const room = "general";
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://localhost:8000/ws/chat/${room}/${encodeURIComponent(currentUser.name)}`);
-    wsRef.current = ws;
+    const wsBase = import.meta.env.VITE_WS_BASE || 'ws://localhost:8000';
+    const ws = new WebSocket(`${wsBase}/ws/chat/${room}/${encodeURIComponent(currentUser.name)}`);
 
     ws.onopen = () => setConnected(true);
     ws.onclose = () => setConnected(false);

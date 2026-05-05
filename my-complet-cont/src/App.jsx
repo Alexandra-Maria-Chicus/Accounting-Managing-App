@@ -178,7 +178,7 @@ function App() {
   useEffect(() => {
     let ws;
     try {
-      ws = new WebSocket('ws://localhost:8000/ws');
+      ws = new WebSocket(`${import.meta.env.VITE_WS_BASE || 'ws://localhost:8000'}/ws`);
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'new_records') {
@@ -221,13 +221,25 @@ function App() {
 
   // ── Auth ──────────────────────────────────────────────────────────────────────
 
-  const handleLoginSuccess = (user) => {
+const handleLoginSuccess = async (user) => {
     saveCurrentUser(user);
     setCurrentUser(user);
     if (user.role === 'client') {
-      const firmData = companies.find(c => c.name === user.companyName);
-      if (firmData) { setSelectedFirmData(firmData); setDetailBackView(null); setView('details'); }
-      else setView('table');
+      let comps = companies;
+      if (comps.length === 0) {
+        try {
+          comps = await api.fetchCompanies();
+          setCompanies(comps);
+        } catch { /* ignore */ }
+      }
+      const firmData = comps.find(c => c.name === user.companyName);
+      if (firmData) {
+        setSelectedFirmData(firmData);
+        setDetailBackView(null);
+        setView('details');
+      } else {
+        setView('table');
+      }
     } else {
       setView('table');
     }
@@ -551,7 +563,7 @@ function App() {
             {view === 'add' && <AddEntry companies={companies} onClose={() => setView('table')} onSave={handleSave} />}
             {view === 'edit' && <EditEntry entry={editingEntry} onClose={() => setView('table')} onSave={handleUpdate} companies={companies} />}
 
-            {view === 'details' && (
+            {view === 'details' && selectedFirmData &&(
               <CompanyPage
                 firm={selectedFirmData}
                 allEntries={allEntries}
