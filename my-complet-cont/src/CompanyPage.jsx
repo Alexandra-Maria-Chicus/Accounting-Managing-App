@@ -256,10 +256,10 @@ function CompanyPage({ firm, allEntries, currentUser, onClose, onAddObservation,
                 className="rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3 text-white"
                 style={{ width: '64px', height: '64px', fontSize: '1.5rem', backgroundColor: '#FF6B00' }}
               >
-                {firm.contactPerson.name.charAt(0)}
+                {firm.contact_person.name.charAt(0)}
               </div>
-              <p className="fw-bold mb-0">{firm.contactPerson.name}</p>
-              <p className="text-muted small mb-4">{firm.contactPerson.email}</p>
+              <p className="fw-bold mb-0">{firm.contact_person.name}</p>
+              <p className="text-muted small mb-4">{firm.contact-person.email}</p>
               <Button
                 variant="dark"
                 className="w-100 py-2 rounded-3 border-0"

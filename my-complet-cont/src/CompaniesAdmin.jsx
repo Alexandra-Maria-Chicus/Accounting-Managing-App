@@ -54,8 +54,8 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
           email: editingCompany.email,
           phone: editingCompany.phone,
           address: editingCompany.address,
-          contactName: editingCompany.contactPerson.name,
-          contactEmail: editingCompany.contactPerson.email,
+          contactName: editingCompany.contact_person.name,
+          contactEmail: editingCompany.contact_person.email,
         }}
         onSave={handleEdit}
         onClose={() => setSubView('list')}
@@ -109,8 +109,8 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
                   </div>
                 </td>
                 <td>
-                  <div className="fw-medium small">{company.contactPerson.name}</div>
-                  <div className="small text-muted">{company.contactPerson.email}</div>
+                  <div className="fw-medium small">{company.contact_person.name}</div>
+                  <div className="small text-muted">{company.contact_person.email}</div>
                 </td>
                 <td className="small text-muted">
                   <Telephone size={11} className="me-1" />

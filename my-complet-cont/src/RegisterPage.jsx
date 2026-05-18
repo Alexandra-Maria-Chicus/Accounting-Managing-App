@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
+import { registerUser } from './api';
 
 function RegisterPage({ onGoToLogin, onRegister }) {
   const [fields, setFields] = useState({ name: '', email: '', password: '', confirm: '' });
@@ -36,18 +37,26 @@ function RegisterPage({ onGoToLogin, onRegister }) {
     return e;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-    setErrors({});
-    onRegister({ id: Date.now(), email: fields.email, password: fields.password, name: fields.name, role: 'employee', companyName: null });
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  const validationErrors = validate();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+  setErrors({});
+  try {
+    await registerUser(fields.name, fields.email, fields.password);
     setSuccess(true);
     setTimeout(() => onGoToLogin(), 2000);
-  };
+  } catch (err) {
+    if (err.status === 409) {
+      setErrors({ email: 'This email is already registered.' });
+    } else {
+      setErrors({ email: 'Registration failed. Please try again.' });
+    }
+  }
+};
 
   return (
     <div className="page-fade-in min-vh-100 d-flex align-items-center justify-content-center"

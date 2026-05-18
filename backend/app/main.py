@@ -31,15 +31,25 @@ app.include_router(graphql_app, prefix="/graphql")
 def root():
     return {"message": "Complet Cont API", "docs": "/docs", "graphql": "/graphql"}
 
-
 @app.middleware("http")
 async def log_middleware(request: Request, call_next):
     response = await call_next(request)
     
+    if request.url.path.startswith("/auth"):
+        return response
+    
+    if request.url.path.startswith("/logs"):
+        return response
+        
+    user_email = request.headers.get("X-User-Email", "anonymous")
+    
+    # only log if we know who the user is
+    if user_email == "anonymous":
+        return response
+    
     if request.method in ("POST", "PUT", "DELETE", "PATCH"):
         try:
             db = SessionLocal()
-            user_email = request.headers.get("X-User-Email", "anonymous")
             user_role = request.headers.get("X-User-Role", "unknown")
             log_service.log_action(
                 db,

@@ -13,6 +13,7 @@ function Chat({ currentUser }) {
     const wsBase = import.meta.env.VITE_WS_BASE || 'ws://localhost:8000';
     const ws = new WebSocket(`${wsBase}/ws/chat/${room}/${encodeURIComponent(currentUser.name)}`);
 
+    wsRef.current = ws;
     ws.onopen = () => setConnected(true);
     ws.onclose = () => setConnected(false);
 
@@ -32,11 +33,12 @@ function Chat({ currentUser }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = () => {
-    if (!input.trim() || !wsRef.current) return;
-    wsRef.current.send(JSON.stringify({ message: input.trim() }));
-    setInput('');
-  };
+const sendMessage = () => {
+  console.log('sendMessage called, input:', input, 'ws state:', wsRef.current?.readyState);
+  if (!input.trim() || !wsRef.current) return;
+  wsRef.current.send(JSON.stringify({ message: input.trim() }));
+  setInput('');
+};
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

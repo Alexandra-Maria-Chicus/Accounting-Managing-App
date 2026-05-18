@@ -133,3 +133,10 @@ export function loginUser(email, password) {
     body: JSON.stringify({ email, password }),
   });
 }
+
+export function registerUser(name, email, password) {
+  return apiFetch('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, password }),
+  });
+}

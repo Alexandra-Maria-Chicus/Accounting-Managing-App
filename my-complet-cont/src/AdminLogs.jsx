@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, Table, Badge, Button } from 'react-bootstrap';
 
-const BASE = 'http://localhost:8000';
+const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 function AdminLogs() {
   const [logs, setLogs] = useState([]);

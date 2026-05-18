@@ -22,7 +22,6 @@ async def get_chat_history(room: str = "general", limit: int = 50):
         messages.append(msg)
     return list(reversed(messages))
 
-
 @router.websocket("/ws/chat/{room}/{user_name}")
 async def chat_endpoint(websocket: WebSocket, room: str, user_name: str):
     await websocket.accept()
@@ -31,23 +30,14 @@ async def chat_endpoint(websocket: WebSocket, room: str, user_name: str):
         active_connections[room] = []
     active_connections[room].append(websocket)
 
-    # send chat history to new user
-    history = await get_chat_history(room)
-    await websocket.send_json({"type": "history", "messages": history})
-
-    # notify others
-    await broadcast(room, {
-        "type": "system",
-        "message": f"{user_name} joined the chat",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }, exclude=websocket)
-
     try:
+        history = await get_chat_history(room)
+        await websocket.send_json({"type": "history", "messages": history})
+
         while True:
             data = await websocket.receive_text()
             msg = json.loads(data)
 
-            # save to MongoDB
             doc = {
                 "room": room,
                 "sender": user_name,
@@ -57,17 +47,11 @@ async def chat_endpoint(websocket: WebSocket, room: str, user_name: str):
             await chat_collection.insert_one(doc)
             doc["_id"] = str(doc["_id"])
 
-            # broadcast to everyone in room
             await broadcast(room, {"type": "message", **doc})
 
     except WebSocketDisconnect:
-        active_connections[room].remove(websocket)
-        await broadcast(room, {
-            "type": "system",
-            "message": f"{user_name} left the chat",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
-
+        if websocket in active_connections.get(room, []):
+            active_connections[room].remove(websocket)
 
 async def broadcast(room: str, message: dict, exclude=None):
     dead = []
