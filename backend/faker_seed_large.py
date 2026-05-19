@@ -1,3 +1,4 @@
+import re
 import random
 import sys
 import os
@@ -25,9 +26,10 @@ def seed_large(db):
         for i in range(NUM_COMPANIES):
             name = f"{fake.company()} {i}"
             code = f"FIRM{i:04d}-2026"
+            raw_phone = re.sub(r'x\d+', '', fake.phone_number()).strip().rstrip('-').strip()[:20]
             company = Company(
                 name=name,
-                phone=fake.phone_number()[:20],
+                phone=raw_phone,
                 email=fake.company_email(),
                 address=fake.address().replace('\n', ', ')[:100],
                 registration_code=code,

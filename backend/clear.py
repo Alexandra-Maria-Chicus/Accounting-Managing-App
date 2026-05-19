@@ -1,8 +1,10 @@
 from app.db.session import SessionLocal
 from app.db.models import Record, Company, ContactPerson, Observation, User, RolePermission, Role, Permission, Log, SuspiciousUser
+from app.db.models.auth_token import AuthToken
 
 db = SessionLocal()
 
+db.query(AuthToken).delete()
 db.query(SuspiciousUser).delete()
 db.query(Log).delete()
 db.query(Record).delete()

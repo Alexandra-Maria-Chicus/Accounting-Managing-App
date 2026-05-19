@@ -11,7 +11,7 @@ function Home({ onGetStarted, onLogin, onRegister }) {
       <Container fluid className="bg-white border-bottom shadow-sm sticky-top px-5 py-2">
         <div className="d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center ">
-            <img src="logo.png" alt="Logo" width="50" /> 
+            <img src="/logo.png" alt="Logo" width="50" /> 
             <span className="fw-bold fs-5" style={{ color: brandOrange }}>Complet Cont</span>
           </div>
           <div className="d-flex gap-2">
@@ -24,7 +24,7 @@ function Home({ onGetStarted, onLogin, onRegister }) {
       </Container>
 
       <Container className="py-5 bg-white rounded-4 shadow-sm my-5 text-center">
-          <img src="logo.png" alt="Big Logo"  height="200" />
+          <img src="/logo.png" alt="Big Logo"  height="200" />
         
         <h1 className="fw-bolder mb-2 display-3" style={{ color: brandOrange }}>
           Complet Cont

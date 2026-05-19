@@ -13,9 +13,15 @@ app = FastAPI(title="Complet Cont API", version="1.0.0")
 
 import os as _os
 _FRONTEND = _os.getenv("FRONTEND_URL", "https://localhost:5173")
+_FRONTEND_HTTP = _FRONTEND.replace("https://", "http://")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[_FRONTEND, "https://localhost:5173", "http://localhost:5173"],
+    allow_origins=[
+        _FRONTEND,
+        _FRONTEND_HTTP,
+        "https://localhost:5173",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

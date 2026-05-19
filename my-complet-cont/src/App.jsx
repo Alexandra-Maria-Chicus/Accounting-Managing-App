@@ -425,7 +425,7 @@ const handleLoginSuccess = async (user) => {
 
           <Navbar bg="white" className="border-bottom px-3 px-md-4 shadow-sm" expand="lg">
             <Navbar.Brand className="fw-bold d-flex align-items-center me-4">
-              <img src="logo.png" alt="Logo" height="32" className="me-2" />
+              <img src="/logo.png" alt="Logo" height="32" className="me-2" />
               <span style={{ color: '#FF6B00', fontSize: '1.3rem' }}>Complet Cont</span>
             </Navbar.Brand>
             {!isClient && <Navbar.Toggle aria-controls="main-nav" className="border-0 shadow-none" />}

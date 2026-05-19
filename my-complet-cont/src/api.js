@@ -51,7 +51,7 @@ function _processQueue(error, token = null) {
 async function _refreshAccessToken() {
   const res = await fetch(`${BASE}/auth/refresh`, {
     method: 'POST',
-    credentials: 'include',  // sends the httpOnly cookie
+    credentials: 'include', 
   });
   if (!res.ok) throw new Error('Refresh failed');
   const data = await res.json();

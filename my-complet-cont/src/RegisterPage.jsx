@@ -63,7 +63,7 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
       <Container style={{ maxWidth: '480px' }}>
 
         <div className="text-center mb-4">
-          <img src="logo.png" alt="Logo" height="64" className="mb-2" />
+          <img src="/logo.png" alt="Logo" height="64" className="mb-2" />
           <div className="fw-bold fs-4" style={{ color: '#FF6B00' }}>Complet Cont</div>
           <div className="text-muted small">Create your account</div>
         </div>

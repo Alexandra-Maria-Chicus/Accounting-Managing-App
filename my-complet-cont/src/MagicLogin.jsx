@@ -30,7 +30,7 @@ export default function MagicLogin({ onLoginSuccess, onGoToLogin }) {
     <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f8f9fa' }}>
       <Container style={{ maxWidth: '440px' }}>
         <div className="text-center mb-4">
-          <img src="logo.png" alt="Logo" height="64" className="mb-2" />
+          <img src="/logo.png" alt="Logo" height="64" className="mb-2" />
           <div className="fw-bold fs-4" style={{ color: '#FF6B00' }}>Complet Cont</div>
         </div>
 

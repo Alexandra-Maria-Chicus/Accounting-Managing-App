@@ -30,8 +30,8 @@ export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
     try {
       const user = await loginUser(email, password);
       onLoginSuccess(user);
-    } catch {
-      setAuthError('Incorrect email or password. Please try again.');
+    } catch (err) {
+      setAuthError(err.message || 'Incorrect email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
       <Container style={{ maxWidth: '440px' }}>
 
         <div className="text-center mb-4">
-          <img src="logo.png" alt="Logo" height="64" className="mb-2" />
+          <img src="/logo.png" alt="Logo" height="64" className="mb-2" />
           <div className="fw-bold fs-4" style={{ color: '#FF6B00' }}>Complet Cont</div>
           <div className="text-muted small">
             {subView === 'login'  && 'Sign in to your account'}
