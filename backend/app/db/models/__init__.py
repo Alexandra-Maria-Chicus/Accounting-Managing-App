@@ -9,3 +9,4 @@ from .role_permission import RolePermission
 from .user import User
 from .log import Log
 from .suspicious_user import SuspiciousUser
+from .auth_token import AuthToken

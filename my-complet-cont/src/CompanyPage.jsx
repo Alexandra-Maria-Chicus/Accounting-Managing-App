@@ -61,23 +61,30 @@ function CompanyPage({ firm, allEntries, currentUser, onClose, onAddObservation,
             <h2 className="fw-bold mb-1">{firm.name}</h2>
             <p className="text-muted small mb-0"><GeoAlt className="me-1" />{firm.address}</p>
           </div>
-          <div className="d-flex gap-2 align-items-center">
-            <Badge
-              className="px-3 py-2"
-              bg=""
-              style={currentMonthEntry
-                ? { backgroundColor: '#198754', color: '#fff' }
-                : { backgroundColor: '#dc3545', color: '#fff' }}
-            >
-              {currentMonthEntry ? 'Received' : 'Not Received'}
-            </Badge>
-            <Badge
-              className="px-3 py-2"
-              bg=""
-              style={STATUS_STYLE[currentStatus]}
-            >
-              {currentStatus}
-            </Badge>
+          <div className="d-flex flex-column align-items-end gap-2">
+            <div className="d-flex gap-2">
+              <Badge
+                className="px-3 py-2"
+                bg=""
+                style={currentMonthEntry
+                  ? { backgroundColor: '#198754', color: '#fff' }
+                  : { backgroundColor: '#dc3545', color: '#fff' }}
+              >
+                {currentMonthEntry ? 'Received' : 'Not Received'}
+              </Badge>
+              <Badge
+                className="px-3 py-2"
+                bg=""
+                style={STATUS_STYLE[currentStatus]}
+              >
+                {currentStatus}
+              </Badge>
+            </div>
+            {isAdmin && firm.registration_code && (
+              <span className="small text-muted" style={{ fontFamily: 'monospace' }}>
+                Firm code: <strong>{firm.registration_code}</strong>
+              </span>
+            )}
           </div>
         </div>
         <hr className="my-4" />
@@ -256,10 +263,10 @@ function CompanyPage({ firm, allEntries, currentUser, onClose, onAddObservation,
                 className="rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3 text-white"
                 style={{ width: '64px', height: '64px', fontSize: '1.5rem', backgroundColor: '#FF6B00' }}
               >
-                {firm.contact_person.name.charAt(0)}
+                {firm.contact_person?.name?.charAt(0) ?? '?'}
               </div>
-              <p className="fw-bold mb-0">{firm.contact_person.name}</p>
-              <p className="text-muted small mb-4">{firm.contact-person.email}</p>
+              <p className="fw-bold mb-0">{firm.contact_person?.name ?? '—'}</p>
+              <p className="text-muted small mb-4">{firm.contact_person?.email ?? '—'}</p>
               <Button
                 variant="dark"
                 className="w-100 py-2 rounded-3 border-0"

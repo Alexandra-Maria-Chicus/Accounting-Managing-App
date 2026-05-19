@@ -54,8 +54,8 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
           email: editingCompany.email,
           phone: editingCompany.phone,
           address: editingCompany.address,
-          contactName: editingCompany.contact_person.name,
-          contactEmail: editingCompany.contact_person.email,
+          contactName: editingCompany.contact_person?.name ?? '',
+          contactEmail: editingCompany.contact_person?.email ?? '',
         }}
         onSave={handleEdit}
         onClose={() => setSubView('list')}
@@ -89,6 +89,7 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
               <th className="py-3 text-uppercase small text-muted fw-bold">Contact</th>
               <th className="py-3 text-uppercase small text-muted fw-bold">Phone</th>
               <th className="py-3 text-uppercase small text-muted fw-bold">Address</th>
+              {isAdmin && <th className="py-3 text-uppercase small text-muted fw-bold">Firm Code</th>}
               {isAdmin && <th className="pe-4 py-3 text-end text-uppercase small text-muted fw-bold">Actions</th>}
             </tr>
           </thead>
@@ -109,8 +110,8 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
                   </div>
                 </td>
                 <td>
-                  <div className="fw-medium small">{company.contact_person.name}</div>
-                  <div className="small text-muted">{company.contact_person.email}</div>
+                  <div className="fw-medium small">{company.contact_person?.name ?? '—'}</div>
+                  <div className="small text-muted">{company.contact_person?.email ?? '—'}</div>
                 </td>
                 <td className="small text-muted">
                   <Telephone size={11} className="me-1" />
@@ -120,6 +121,11 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
                   <GeoAlt size={11} className="me-1" />
                   {company.address}
                 </td>
+                {isAdmin && (
+                  <td className="small text-muted" style={{ fontFamily: 'monospace' }}>
+                    {company.registration_code ?? '—'}
+                  </td>
+                )}
                 {isAdmin && (
                   <td className="pe-4 text-end">
                     {deletingId === company.id ? (

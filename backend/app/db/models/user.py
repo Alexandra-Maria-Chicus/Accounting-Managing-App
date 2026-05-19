@@ -14,3 +14,4 @@ class User(Base):
     company = relationship("Company")
     logs = relationship("Log", back_populates="user")
     suspicious_flags = relationship("SuspiciousUser", back_populates="user")
+    auth_tokens = relationship("AuthToken", back_populates="user")

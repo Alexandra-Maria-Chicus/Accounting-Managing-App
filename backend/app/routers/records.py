@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.record import Record, RecordCreate, RecordUpdate
 from app.services import record_service
+from app.services.auth_service import get_current_user, require_role, require_permission
 
 router = APIRouter(prefix="/records", tags=["records"])
 
@@ -16,17 +17,25 @@ def list_records(
     month: Optional[int] = Query(None, ge=0, le=11),
     year: Optional[int] = Query(None, ge=2000, le=2100),
     db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
 ):
     return record_service.get_all(db, page, page_size, month, year)
 
 
 @router.get("/stats")
-def get_stats(db: Session = Depends(get_db)):
+def get_stats(
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("read_records")),
+):
     return record_service.get_stats(db)
 
 
 @router.get("/{record_id}", response_model=Record)
-def get_record(record_id: int, db: Session = Depends(get_db)):
+def get_record(
+    record_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
     record = record_service.get_by_id(db, record_id)
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
@@ -34,12 +43,21 @@ def get_record(record_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=Record, status_code=201)
-def create_record(data: RecordCreate, db: Session = Depends(get_db)):
+def create_record(
+    data: RecordCreate,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("write_records")),
+):
     return record_service.create(db, data)
 
 
 @router.put("/{record_id}", response_model=Record)
-def update_record(record_id: int, data: RecordUpdate, db: Session = Depends(get_db)):
+def update_record(
+    record_id: int,
+    data: RecordUpdate,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("write_records")),
+):
     record = record_service.update(db, record_id, data)
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
@@ -47,6 +65,10 @@ def update_record(record_id: int, data: RecordUpdate, db: Session = Depends(get_
 
 
 @router.delete("/{record_id}", status_code=204)
-def delete_record(record_id: int, db: Session = Depends(get_db)):
+def delete_record(
+    record_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("delete_records")),
+):
     if not record_service.delete(db, record_id):
         raise HTTPException(status_code=404, detail="Record not found")

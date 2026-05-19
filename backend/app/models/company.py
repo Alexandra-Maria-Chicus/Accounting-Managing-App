@@ -1,5 +1,6 @@
 import re
 from typing import List
+from typing import Optional
 from pydantic import BaseModel, field_validator, ConfigDict, Field
 
 
@@ -102,3 +103,4 @@ class Company(CompanyBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
     observations: List[Observation] = []
+    registration_code: Optional[str] = None

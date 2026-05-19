@@ -14,6 +14,12 @@ def get_by_id(db: Session, company_id: int) -> Optional[Company]:
     return db.query(Company).filter(Company.id == company_id).first()
 
 
+def get_by_registration_code(db: Session, code: str) -> Optional[Company]:
+    return db.query(Company).filter(
+        Company.registration_code == code.strip().upper()
+    ).first()
+
+
 def create(db: Session, data: CompanyCreate) -> Company:
     if db.query(Company).filter(Company.name.ilike(data.name)).first():
         raise ValueError(f"Company with name '{data.name}' already exists")

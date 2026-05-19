@@ -9,6 +9,7 @@ class Company(Base):
     phone = Column(String)
     email = Column(String)
     address = Column(String)
+    registration_code = Column(String, unique=True, nullable=True)
     contactPerson = relationship("ContactPerson", back_populates="company", uselist=False, cascade="all, delete-orphan")
     observations = relationship("Observation", back_populates="company", cascade="all, delete-orphan")
     records = relationship("Record", back_populates="company")

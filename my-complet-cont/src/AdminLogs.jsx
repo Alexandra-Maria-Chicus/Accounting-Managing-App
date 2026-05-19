@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Table, Badge, Button } from 'react-bootstrap';
-
-const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { fetchLogs, fetchSuspicious, resolveFlag as apiFlagResolve } from './api';
 
 function AdminLogs() {
   const [logs, setLogs] = useState([]);
@@ -9,12 +8,12 @@ function AdminLogs() {
   const [activeTab, setActiveTab] = useState('logs');
 
   useEffect(() => {
-    fetch(`${BASE}/logs`).then(r => r.json()).then(setLogs).catch(() => {});
-    fetch(`${BASE}/logs/suspicious`).then(r => r.json()).then(setSuspicious).catch(() => {});
+    fetchLogs().then(setLogs).catch(() => {});
+    fetchSuspicious().then(setSuspicious).catch(() => {});
   }, []);
 
   const resolveFlag = async (id) => {
-    await fetch(`${BASE}/logs/suspicious/${id}/resolve`, { method: 'PATCH' });
+    await apiFlagResolve(id);
     setSuspicious(prev => prev.filter(f => f.id !== id));
   };
 
@@ -42,11 +41,11 @@ function AdminLogs() {
       </div>
 
       <div className="nav-pill-track mb-4" style={{ width: 'fit-content' }}>
-        <div className="nav-pill" style={{ transform: activeTab === 'suspicious' ? 'translateX(100%)' : 'translateX(0)' }} />
-        <button className={`nav-pill-btn${activeTab === 'logs' ? ' active' : ''}`} onClick={() => setActiveTab('logs')}>
+        <div className="nav-pill" style={{ transform: activeTab === 'suspicious' ? 'translateX(100%)' : 'translateX(0)', width: 'calc(50% - 4px)' }} />
+        <button className={`nav-pill-btn${activeTab === 'logs' ? ' active' : ''}`} style={{ minWidth: '140px' }} onClick={() => setActiveTab('logs')}>
           All Logs
         </button>
-        <button className={`nav-pill-btn${activeTab === 'suspicious' ? ' active' : ''}`} onClick={() => setActiveTab('suspicious')}>
+        <button className={`nav-pill-btn${activeTab === 'suspicious' ? ' active' : ''}`} style={{ minWidth: '140px' }} onClick={() => setActiveTab('suspicious')}>
           Suspicious {suspicious.length > 0 && `(${suspicious.length})`}
         </button>
       </div>
@@ -111,7 +110,34 @@ function AdminLogs() {
                     {new Date(flag.detected_at).toLocaleString('en-GB')}
                   </td>
                   <td className="small fw-medium text-danger">{flag.user_email}</td>
-                  <td className="small">{flag.reason}</td>
+                  <td className="small">
+                    <div className="fw-bold mb-1">{flag.reason}</div>
+                    {flag.ai_explanation && (
+                      <div
+                        className="text-muted p-2 rounded-3 mt-1"
+                        style={{
+                          backgroundColor: '#fff8f0',
+                          border: '1px solid #fed7aa',
+                          fontSize: '0.78rem',
+                          lineHeight: '1.5',
+                          maxWidth: '420px',
+                        }}
+                      >
+                        <span
+                          className="fw-bold me-1"
+                          style={{ color: '#FF6B00', fontSize: '0.7rem' }}
+                        >
+                          AI ANALYSIS
+                        </span>
+                        {flag.ai_explanation}
+                      </div>
+                    )}
+                    {!flag.ai_explanation && (
+                      <div className="text-muted mt-1" style={{ fontSize: '0.72rem', fontStyle: 'italic' }}>
+                        AI analysis pending…
+                      </div>
+                    )}
+                  </td>
                   <td className="pe-4">
                     <Button
                       size="sm"

@@ -11,4 +11,5 @@ class SuspiciousUser(Base):
     reason = Column(String, nullable=False)
     detected_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     resolved = Column(Boolean, default=False)
+    ai_explanation = Column(String, nullable=True)
     user = relationship("User", back_populates="suspicious_flags")

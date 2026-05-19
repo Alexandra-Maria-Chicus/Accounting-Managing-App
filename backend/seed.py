@@ -9,19 +9,19 @@ def seed(db):
         print("Already seeded, skipping companies.")
     else:
         companies_data = [
-            {"name": "Valley Education",      "phone": "+40 758 177 097", "email": "finance@valleyedu.org",   "address": "Str. Visinului, Bacau",               "contact": {"name": "Dr. Sarah Mitchell", "email": "sarah.mitchell@valleyedu.org"}},
-            {"name": "Acme Corporation",       "phone": "+40 722 100 200", "email": "info@acme.com",           "address": "Bulevardul Eroilor, Cluj-Napoca",     "contact": {"name": "John Doe",           "email": "j.doe@acme.com"}},
-            {"name": "TechStart Inc.",         "phone": "+40 744 333 444", "email": "contact@techstart.io",   "address": "Str. Memorandumului, Cluj-Napoca",    "contact": {"name": "Alice Vance",        "email": "alice@techstart.io"}},
-            {"name": "Global Logistics",       "phone": "+40 733 555 666", "email": "logistics@global.ro",    "address": "Calea Turzii, Cluj-Napoca",           "contact": {"name": "Mark Stevens",       "email": "m.stevens@global.ro"}},
-            {"name": "Riverside Medical",      "phone": "+40 788 111 222", "email": "office@riverside.med",   "address": "Str. Clinicilor, Cluj-Napoca",        "contact": {"name": "Elena Popescu",      "email": "e.popescu@riverside.med"}},
-            {"name": "Downtown Retail",        "phone": "+40 755 999 000", "email": "sales@downtown.ro",      "address": "Str. Regele Ferdinand, Cluj-Napoca", "contact": {"name": "George Marin",       "email": "g.marin@downtown.ro"}},
-            {"name": "Mountain Coffee",        "phone": "+40 741 222 333", "email": "hello@mtncoffee.com",    "address": "Str. Avram Iancu, Brasov",            "contact": {"name": "Ana Maria",          "email": "ana@mtncoffee.com"}},
-            {"name": "Precision Tech",         "phone": "+40 725 666 777", "email": "eng@prectech.ro",        "address": "Zona Industriala, Sibiu",             "contact": {"name": "Victor Ionescu",     "email": "v.ionescu@prectech.ro"}},
-            {"name": "Blue Wave Agency",       "phone": "+40 732 444 555", "email": "ads@bluewave.ro",        "address": "Str. Constanta, Mamaia",              "contact": {"name": "Laura Dumitru",      "email": "laura@bluewave.ro"}},
-            {"name": "Green Energy Solutions", "phone": "+40 766 888 999", "email": "solar@greenenergy.ro",   "address": "Soseaua Pipera, Bucuresti",           "contact": {"name": "Radu Filipescu",     "email": "r.filipescu@greenenergy.ro"}},
+            {"name": "Valley Education",      "phone": "+40 758 177 097", "email": "finance@valleyedu.org",  "address": "Str. Visinului, Bacau",               "code": "VALLEY-2026",    "contact": {"name": "Dr. Sarah Mitchell", "email": "sarah.mitchell@valleyedu.org"}},
+            {"name": "Acme Corporation",      "phone": "+40 722 100 200", "email": "info@acme.com",           "address": "Bulevardul Eroilor, Cluj-Napoca",      "code": "ACME-2026",      "contact": {"name": "John Doe",           "email": "j.doe@acme.com"}},
+            {"name": "TechStart Inc.",        "phone": "+40 744 333 444", "email": "contact@techstart.io",   "address": "Str. Memorandumului, Cluj-Napoca",     "code": "TECHSTART-2026", "contact": {"name": "Alice Vance",        "email": "alice@techstart.io"}},
+            {"name": "Global Logistics",      "phone": "+40 733 555 666", "email": "logistics@global.ro",    "address": "Calea Turzii, Cluj-Napoca",            "code": "GLOBAL-2026",    "contact": {"name": "Mark Stevens",       "email": "m.stevens@global.ro"}},
+            {"name": "Riverside Medical",     "phone": "+40 788 111 222", "email": "office@riverside.med",   "address": "Str. Clinicilor, Cluj-Napoca",         "code": "RIVERSIDE-2026", "contact": {"name": "Elena Popescu",      "email": "e.popescu@riverside.med"}},
+            {"name": "Downtown Retail",       "phone": "+40 755 999 000", "email": "sales@downtown.ro",      "address": "Str. Regele Ferdinand, Cluj-Napoca",   "code": "DOWNTOWN-2026",  "contact": {"name": "George Marin",       "email": "g.marin@downtown.ro"}},
+            {"name": "Mountain Coffee",       "phone": "+40 741 222 333", "email": "hello@mtncoffee.com",    "address": "Str. Avram Iancu, Brasov",             "code": "MOUNTAIN-2026",  "contact": {"name": "Ana Maria",          "email": "ana@mtncoffee.com"}},
+            {"name": "Precision Tech",        "phone": "+40 725 666 777", "email": "eng@prectech.ro",        "address": "Zona Industriala, Sibiu",              "code": "PRECISION-2026", "contact": {"name": "Victor Ionescu",     "email": "v.ionescu@prectech.ro"}},
+            {"name": "Blue Wave Agency",      "phone": "+40 732 444 555", "email": "ads@bluewave.ro",        "address": "Str. Constanta, Mamaia",               "code": "BLUEWAVE-2026",  "contact": {"name": "Laura Dumitru",      "email": "laura@bluewave.ro"}},
+            {"name": "Green Energy Solutions","phone": "+40 766 888 999", "email": "solar@greenenergy.ro",   "address": "Soseaua Pipera, Bucuresti",            "code": "GREEN-2026",     "contact": {"name": "Radu Filipescu",     "email": "r.filipescu@greenenergy.ro"}},
         ]
         for c in companies_data:
-            company = Company(name=c["name"], phone=c["phone"], email=c["email"], address=c["address"])
+            company = Company(name=c["name"], phone=c["phone"], email=c["email"], address=c["address"], registration_code=c["code"])
             db.add(company)
             db.flush()
             db.add(ContactPerson(company_id=company.id, name=c["contact"]["name"], email=c["contact"]["email"]))

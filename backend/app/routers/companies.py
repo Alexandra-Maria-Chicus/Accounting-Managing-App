@@ -5,17 +5,25 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.company import Company, CompanyCreate, CompanyUpdate, Observation, ObservationCreate
 from app.services import company_service
+from app.services.auth_service import get_current_user, require_role, require_permission
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 
 
 @router.get("", response_model=List[Company])
-def list_companies(db: Session = Depends(get_db)):
+def list_companies(
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
     return company_service.get_all(db)
 
 
 @router.get("/{company_id}", response_model=Company)
-def get_company(company_id: int, db: Session = Depends(get_db)):
+def get_company(
+    company_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
     company = company_service.get_by_id(db, company_id)
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -23,7 +31,11 @@ def get_company(company_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=Company, status_code=201)
-def create_company(data: CompanyCreate, db: Session = Depends(get_db)):
+def create_company(
+    data: CompanyCreate,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("manage_companies")),
+):
     try:
         return company_service.create(db, data)
     except ValueError as e:
@@ -31,7 +43,12 @@ def create_company(data: CompanyCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{company_id}", response_model=Company)
-def update_company(company_id: int, data: CompanyUpdate, db: Session = Depends(get_db)):
+def update_company(
+    company_id: int,
+    data: CompanyUpdate,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("manage_companies")),
+):
     try:
         company = company_service.update(db, company_id, data)
     except ValueError as e:
@@ -42,13 +59,22 @@ def update_company(company_id: int, data: CompanyUpdate, db: Session = Depends(g
 
 
 @router.delete("/{company_id}", status_code=204)
-def delete_company(company_id: int, db: Session = Depends(get_db)):
+def delete_company(
+    company_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("manage_companies")),
+):
     if not company_service.delete(db, company_id):
         raise HTTPException(status_code=404, detail="Company not found")
 
 
 @router.post("/{company_id}/observations", response_model=Observation, status_code=201)
-def add_observation(company_id: int, data: ObservationCreate, db: Session = Depends(get_db)):
+def add_observation(
+    company_id: int,
+    data: ObservationCreate,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("write_records")),
+):
     obs = company_service.add_observation(db, company_id, data)
     if obs is None:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -56,7 +82,12 @@ def add_observation(company_id: int, data: ObservationCreate, db: Session = Depe
 
 
 @router.patch("/{company_id}/observations/{obs_id}/toggle", response_model=Observation)
-def toggle_observation(company_id: int, obs_id: int, db: Session = Depends(get_db)):
+def toggle_observation(
+    company_id: int,
+    obs_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
     obs = company_service.toggle_observation(db, company_id, obs_id)
     if obs is None:
         raise HTTPException(status_code=404, detail="Observation not found")
@@ -64,6 +95,11 @@ def toggle_observation(company_id: int, obs_id: int, db: Session = Depends(get_d
 
 
 @router.delete("/{company_id}/observations/{obs_id}", status_code=204)
-def delete_observation(company_id: int, obs_id: int, db: Session = Depends(get_db)):
+def delete_observation(
+    company_id: int,
+    obs_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_permission("write_records")),
+):
     if not company_service.delete_observation(db, company_id, obs_id):
         raise HTTPException(status_code=404, detail="Observation not found")

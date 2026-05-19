@@ -82,6 +82,15 @@ def _flag_suspicious(db: Session, user_email: str, user_id: int, reason: str):
     )
     db.add(flag)
     db.commit()
+    db.refresh(flag)
+    import threading
+    from app.services.ai_monitor_service import flag_with_ai_explanation
+    thread = threading.Thread(
+        target=flag_with_ai_explanation,
+        args=(db, flag),
+        daemon=True,
+    )
+    thread.start()
 
 
 def get_logs(db: Session, limit: int = 100):

@@ -5,11 +5,15 @@ import EditEntry from './EditEntry';
 import Home from './Home'
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
+import ResetPassword from './ResetPassword';
+import MagicLogin from './MagicLogin';
 import CompaniesAdmin from './CompaniesAdmin';
 import AdminLogs from './AdminLogs';
 import Chat from './Chat';
 import * as api from './api';
-import { savePeriodPreference, loadPeriodPreference, saveCurrentUser, loadCurrentUser, clearCurrentUser } from './cookies'
+import { savePeriodPreference, loadPeriodPreference } from './cookies'
+import { storeUser, getStoredUser, clearUser, fetchCurrentUser, logoutUser } from './api'
+import useInactivityLogout from './useInactivityLogout'
 import CompanyPage from './CompanyPage';
 import InlineCharts from './InlineCharts';
 import { Container, Card, Table, Form, Row, Col, Button, Badge, Nav, Navbar } from 'react-bootstrap';
@@ -52,8 +56,7 @@ function App() {
   const sentinelRef = useRef(null);
   const prefetchRef = useRef(null); // { page, items, total_pages }
 
-  const savedUser = loadCurrentUser();
-  const [currentUser, setCurrentUser] = useState(savedUser || null);
+  const [currentUser, setCurrentUser] = useState(getStoredUser());
 
   const now = new Date();
   const savedPeriod = loadPeriodPreference();
@@ -65,8 +68,12 @@ function App() {
   const [deletingEntryId, setDeletingEntryId] = useState(null);
   const [slidingOutId, setSlidingOutId] = useState(null);
   const [view, setView] = useState(() => {
-    if (!savedUser) return 'home';
-    if (savedUser.role === 'client') return 'details';
+    const path = window.location.pathname;
+    if (path.startsWith('/reset-password/')) return 'reset-password';
+    if (path.startsWith('/magic/'))          return 'magic-login';
+    const u = getStoredUser();
+    if (!u) return 'home';
+    if (u.role === 'client') return 'details';
     return 'table';
   });
 
@@ -78,8 +85,9 @@ function App() {
       .catch(() => {});
   }, []);
 
-  // Reset and load page 1 whenever filters change
+  // Reset and load page 1 whenever filters change (only when logged in)
   useEffect(() => {
+    if (!currentUser) return;
     let cancelled = false;
     pageRef.current = 1;
     prefetchRef.current = null;
@@ -97,7 +105,7 @@ function App() {
       .catch(e => { if (!cancelled && e.name === 'TypeError') setIsOnline(false); });
 
     return () => { cancelled = true; };
-  }, [selectedMonth, selectedYear, prefetch]);
+  }, [selectedMonth, selectedYear, prefetch, currentUser]);
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
@@ -159,8 +167,8 @@ function App() {
     } catch { /* non-critical */ }
   }, []);
 
-  useEffect(() => { loadAllEntries(); }, [loadAllEntries]);
-  useEffect(() => { loadCompanies(); }, [loadCompanies]);
+  useEffect(() => { if (currentUser) loadAllEntries(); }, [loadAllEntries, currentUser]);
+  useEffect(() => { if (currentUser) loadCompanies(); }, [loadCompanies, currentUser]);
 
   // On mount: flush any ops queued from a previous offline session
   useEffect(() => {
@@ -222,7 +230,7 @@ function App() {
   // ── Auth ──────────────────────────────────────────────────────────────────────
 
 const handleLoginSuccess = async (user) => {
-    saveCurrentUser(user);
+    storeUser(user);
     setCurrentUser(user);
     if (user.role === 'client') {
       let comps = companies;
@@ -245,11 +253,23 @@ const handleLoginSuccess = async (user) => {
     }
   };
 
-  const handleLogout = () => {
-    clearCurrentUser();
+  const handleLogout = async () => {
+    await logoutUser();
     setCurrentUser(null);
     setView('home');
   };
+
+  useInactivityLogout(handleLogout, !!currentUser);
+
+  useEffect(() => {
+    const user = getStoredUser();
+    if (!user) return;
+    fetchCurrentUser().catch(() => {
+      clearUser();
+      setCurrentUser(null);
+      setView('home');
+    });
+  }, []);
 
   // ── Records CRUD (update state in-place — no full reload) ────────────────────
 
@@ -374,6 +394,10 @@ const handleLoginSuccess = async (user) => {
   const isAdmin = currentUser?.role === 'admin';
   const isEmployee = currentUser?.role === 'employee';
   const isClient = currentUser?.role === 'client';
+
+  const activeNav = (view === 'add' || view === 'edit') ? 'table'
+    : view === 'details' ? (detailBackView || 'table')
+    : view;
   const clientCompany = isClient ? companies.find(c => c.name === currentUser.companyName) : null;
   const uncheckedObsCount = clientCompany ? clientCompany.observations.filter(o => !o.checked).length : 0;
 
@@ -381,7 +405,9 @@ const handleLoginSuccess = async (user) => {
     <>
       {view === 'home' && <Home onGetStarted={() => setView('login')} onLogin={() => setView('login')} onRegister={() => setView('register')} />}
       {view === 'login' && <LoginPage onLoginSuccess={handleLoginSuccess} onGoToRegister={() => setView('register')} registeredUsers={registeredUsers} />}
-      {view === 'register' && <RegisterPage onGoToLogin={() => setView('login')} onRegister={(user) => setRegisteredUsers(prev => [...prev, user])} />}
+      {view === 'register' && <RegisterPage onGoToLogin={() => setView('login')} onLoginSuccess={handleLoginSuccess} />}
+      {view === 'reset-password' && <ResetPassword onGoToLogin={() => setView('login')} />}
+      {view === 'magic-login' && <MagicLogin onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
       
       {isAppView && (
         <>
@@ -407,13 +433,13 @@ const handleLoginSuccess = async (user) => {
   {!isClient && (
     <Nav className="me-auto mt-2 mt-lg-0">
       <div className="nav-pill-track">
-        <div className="nav-pill" style={{ 
-          transform: view === 'logs' ? 'translateX(200%)' : view === 'companies' ? 'translateX(100%)' : 'translateX(0)',
-          width: isAdmin ? 'calc(33.33% - 4px)' : 'calc(50% - 4px)'
+        <div className="nav-pill" style={{
+          transform: activeNav === 'logs' ? 'translateX(200%)' : activeNav === 'companies' ? 'translateX(100%)' : 'translateX(0)',
+          width: isAdmin ? 'calc((100% - 8px) / 3)' : 'calc(50% - 4px)'
         }} />
-        <button className={`nav-pill-btn${view === 'table' ? ' active' : ''}`} onClick={() => setView('table')}>Documents</button>
-        <button className={`nav-pill-btn${view === 'companies' ? ' active' : ''}`} onClick={() => setView('companies')}>Companies</button>
-        {isAdmin && <button className={`nav-pill-btn${view === 'logs' ? ' active' : ''}`} onClick={() => setView('logs')}>Logs</button>}
+        <button className={`nav-pill-btn${activeNav === 'table' ? ' active' : ''}`} onClick={() => setView('table')}>Documents</button>
+        <button className={`nav-pill-btn${activeNav === 'companies' ? ' active' : ''}`} onClick={() => setView('companies')}>Companies</button>
+        {isAdmin && <button className={`nav-pill-btn${activeNav === 'logs' ? ' active' : ''}`} onClick={() => setView('logs')}>Logs</button>}
       </div>
     </Nav>
   )}
