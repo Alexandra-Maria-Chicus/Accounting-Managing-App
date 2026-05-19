@@ -3,35 +3,46 @@ import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
 import { loginUser, requestPasswordReset, requestMagicLink } from './api';
 
 export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
-  const [subView,   setSubView]   = useState('login');
-  const [email,     setEmail]     = useState('');
-  const [password,  setPassword]  = useState('');
-  const [errors,    setErrors]    = useState({});
+  const [subView, setSubView] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
   const [authError, setAuthError] = useState('');
-  const [success,   setSuccess]   = useState('');
-  const [loading,   setLoading]   = useState(false);
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
 
   const reset = (view) => {
     setSubView(view);
     setErrors({});
     setAuthError('');
     setSuccess('');
+    setLoading(false);
+  };
+
+  const handleCancelLinkView = () => {
+    setLinkSent(false);
+    setLoading(false);
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError('');
     const errs = {};
-    if (!email.trim()) errs.email    = 'Email is required.';
+    if (!email.trim()) errs.email = 'Email is required.';
     if (!password)     errs.password = 'Password is required.';
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    setErrors({});
+    
     setLoading(true);
     try {
-      const user = await loginUser(email, password);
-      onLoginSuccess(user);
+      const response = await loginUser(email, password);
+      if (response.requires_link_confirmation) {
+        setLinkSent(true);
+      } else {
+        onLoginSuccess(response);
+      }
     } catch (err) {
-      setAuthError(err.message || 'Incorrect email or password. Please try again.');
+      setAuthError(err.message || 'Incorrect email or password.');
     } finally {
       setLoading(false);
     }
@@ -63,6 +74,26 @@ export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
 
   const handleSubmit = subView === 'login' ? handleLogin : subView === 'forgot' ? handleForgot : handleMagic;
 
+  // Render pure check email notification screen layout
+  if (linkSent) {
+    return (
+      <div className="page-fade-in min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f8f9fa' }}>
+        <Container style={{ maxWidth: '440px' }}>
+          <Card className="border-0 shadow-sm rounded-4 p-4 text-center">
+            <img src="/logo.png" alt="Logo" height="64" className="mx-auto mb-3" />
+            <h4 className="fw-bold mb-2">Check Your Email</h4>
+            <p className="text-muted small mb-4">
+              A verification magic link has been dispatched to <strong>{email}</strong> via Mailtrap. Open your email inbox and click the security link to log in.
+            </p>
+            <Button variant="link" style={{ color: '#FF6B00' }} onClick={handleCancelLinkView}>
+              &larr; Back to Sign In
+            </Button>
+          </Card>
+        </Container>
+      </div>
+    );
+  }
+
   return (
     <div className="page-fade-in min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f8f9fa' }}>
       <Container style={{ maxWidth: '440px' }}>
@@ -78,7 +109,7 @@ export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
         </div>
 
         <Card className="border-0 shadow-sm rounded-4 p-4">
-          {authError && <Alert variant="danger"  className="rounded-3 py-2 small mb-3">{authError}</Alert>}
+          {authError && <Alert variant="danger" className="rounded-3 py-2 small mb-3">{authError}</Alert>}
           {success   && <Alert variant="success" className="rounded-3 py-2 small mb-3">{success}</Alert>}
 
           {!success && (
@@ -127,7 +158,7 @@ export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
                 style={{ backgroundColor: '#FF6B00' }}
                 disabled={loading}
               >
-                {loading ? 'Please wait…' : (
+                {loading ? 'Please wait...' : (
                   subView === 'login'  ? 'Sign In' :
                   subView === 'forgot' ? 'Send Reset Link' :
                   'Send Login Link'
@@ -146,7 +177,7 @@ export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
           {subView !== 'login' && (
             <div className="text-center mt-3">
               <Button variant="link" className="p-0 shadow-none small text-muted" onClick={() => reset('login')}>
-                ← Back to login
+                &larr; Back to login
               </Button>
             </div>
           )}

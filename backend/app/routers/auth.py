@@ -55,9 +55,9 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         path="/auth/refresh",
     )
 
-
 @router.post("/login")
-def login(data: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+async def login(data: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+    # 1. Match password against standard authorization rules
     result = auth_service.login(db, data.email, data.password)
     if not result:
         log_service.log_action(
@@ -69,16 +69,44 @@ def login(data: LoginRequest, request: Request, response: Response, db: Session 
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     user = auth_service.get_user_by_email(db, data.email)
+    
+    # 2. Generate a magic-link type token so the existing frontend landing page works perfectly
+    token = auth_service.create_auth_token(db, data.email, "magic", user.id)
+    
+    # 3. Ship the verification token out to Mailtrap over the port 465 secure connection
+    await email_service.send_magic_link(user.email, token)
+
+    return {
+        "requires_link_confirmation": True,
+        "email": user.email
+    }
+
+@router.get("/verify-2fa-link/{token}")
+def verify_2fa_link(token: str, response: Response, db: Session = Depends(get_db)):
+    # Validate the token using your existing database checking system
+    db_token = auth_service.validate_auth_token(db, token, "2fa_link")
+    user = db.query(User).filter(User.id == db_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User target missing.")
+
+    # Burn token safely
+    db_token.used = True
+    db.commit()
+
+    # Generate full access credentials and drop cross-site cookies matching standard architecture
+    access_token  = auth_service.create_access_token(user, db)
     refresh_token = auth_service.create_refresh_token(db, user)
     _set_refresh_cookie(response, refresh_token)
 
-    log_service.log_action(
-        db, user_email=result["email"], role=result["role"],
-        action="LOGIN", details=f"User {result['name']} logged in",
-        ip_address=request.client.host, user_id=result["id"],
-    )
-    return result
-
+    return {
+        "access_token": access_token,
+        "token_type":   "bearer",
+        "id":           user.id,
+        "email":        user.email,
+        "name":         user.name,
+        "role":         user.role.name,
+        "companyName":  user.company.name if user.company else None,
+    }
 
 @router.post("/register", status_code=201)
 def register(data: RegisterRequest, response: Response, db: Session = Depends(get_db)):

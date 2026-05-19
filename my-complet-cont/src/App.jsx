@@ -3,6 +3,7 @@ import './App.css'
 import AddEntry from './AddEntry';
 import EditEntry from './EditEntry';
 import Home from './Home'
+import LinkVerifyLanding from './LinkVerifyLanding';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
 import ResetPassword from './ResetPassword';
@@ -67,10 +68,11 @@ function App() {
   const [detailBackView, setDetailBackView] = useState('table');
   const [deletingEntryId, setDeletingEntryId] = useState(null);
   const [slidingOutId, setSlidingOutId] = useState(null);
-  const [view, setView] = useState(() => {
+const [view, setView] = useState(() => {
     const path = window.location.pathname;
     if (path.startsWith('/reset-password/')) return 'reset-password';
     if (path.startsWith('/magic/'))          return 'magic-login';
+    if (path.startsWith('/verify-login-link/')) return 'verify-login-link'; // Added context parameter path target match hook
     const u = getStoredUser();
     if (!u) return 'home';
     if (u.role === 'client') return 'details';

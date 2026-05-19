@@ -23,6 +23,9 @@ export function getStoredUser() {
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
+export function validate2FALink(token) {
+  return apiFetch(`/auth/verify-2fa-link/${token}`);
+}
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY) || null;

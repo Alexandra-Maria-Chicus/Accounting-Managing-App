@@ -25,7 +25,8 @@ async def _send(to_email: str, subject: str, html_body: str) -> None:
         port=MAILTRAP_PORT,
         username=MAILTRAP_USERNAME,
         password=MAILTRAP_PASSWORD,
-        start_tls=True,
+        use_tls=True,
+        start_tls=False,
     )
 
 
@@ -69,3 +70,24 @@ async def send_magic_link(to_email: str, token: str) -> None:
     </div>
     """
     await _send(to_email, "Your Complet Cont login link", html)
+
+async def send_2fa_login_link(to_email: str, token: str) -> None:
+    # Pointing directly to a new 2fa landing view route on your frontend
+    link = f"{FRONTEND_URL}/verify-login-link/{token}"
+    html = f"""
+    <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+      <h2 style="color: #FF6B00;">Complet Cont</h2>
+      <p>Please confirm your sign-in attempt. Click the button below to log in safely:</p>
+      <a href="{link}"
+         style="display:inline-block; background:#FF6B00; color:#fff;
+                padding:12px 28px; border-radius:8px; text-decoration:none;
+                font-weight:bold; margin: 16px 0;">
+        Confirm & Sign In
+      </a>
+      <p style="color:#888; font-size:0.85rem;">
+        This link expires in 10 minutes and can only be used once.
+      </p>
+      <p style="color:#bbb; font-size:0.8rem;">Or copy this URL: {link}</p>
+    </div>
+    """
+    await _send(to_email, "Confirm your Complet Cont sign-in attempt", html)
