@@ -23,9 +23,6 @@ export function getStoredUser() {
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
-export function validate2FALink(token) {
-  return apiFetch(`/auth/verify-2fa-link/${token}`);
-}
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY) || null;
@@ -175,10 +172,10 @@ export function loginUser(email, password) {
   return apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
 }
 
-export function registerUser({ name, email, password, role, staffCode, firmCode }) {
+export function registerUser({ name, email, password, role, staffCode, firmCode, orgName }) {
   return apiFetch('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ name, email, password, role, staffCode, firmCode }),
+    body: JSON.stringify({ name, email, password, role, staffCode, firmCode, orgName }),
   });
 }
 
@@ -205,6 +202,20 @@ export function requestMagicLink(email) {
 
 export function validateMagicLink(token) {
   return apiFetch(`/auth/magic/${token}`);
+}
+
+export async function validate2FALink(token) {
+  return apiFetch(`/auth/verify-2fa-link/${token}`);
+}
+
+// ── Admin user management ─────────────────────────────────────────────────────
+
+export function fetchUsers() {
+  return apiFetch('/auth/users');
+}
+
+export function updateUserRole(userId, role) {
+  return apiFetch(`/auth/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) });
 }
 
 // ── Logs ──────────────────────────────────────────────────────────────────────

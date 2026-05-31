@@ -1,12 +1,33 @@
-import { useState } from 'react';
-import { Card, Form, Row, Col, Button } from 'react-bootstrap';
+import { useState, useEffect, useRef } from 'react';
+import { Card, Form, Row, Col, Button, Spinner } from 'react-bootstrap';
 import { validateCompany } from './companiesLogic';
+
+const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 function CompanyForm({ initial, allCompanies, editingId, onSave, onClose, title }) {
   const [fields, setFields] = useState(
-    initial || { name: '', email: '', phone: '', address: '', contactName: '', contactEmail: '' }
+    initial || { name: '', email: '', phone: '', address: '', contactName: '', contactEmail: '', registrationCode: '' }
   );
   const [errors, setErrors] = useState({});
+  const [codeStatus, setCodeStatus] = useState('idle');
+  const timerRef = useRef(null);
+  const originalCode = (initial?.registrationCode || '').trim().toUpperCase();
+
+  useEffect(() => {
+    const code = (fields.registrationCode || '').trim().toUpperCase();
+    if (!code || code === originalCode) { setCodeStatus('idle'); return; }
+    if (code.length < 4) { setCodeStatus('idle'); return; }
+    setCodeStatus('checking');
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${BASE}/auth/check-code?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        setCodeStatus(data.taken ? 'taken' : 'available');
+      } catch { setCodeStatus('idle'); }
+    }, 450);
+    return () => clearTimeout(timerRef.current);
+  }, [fields.registrationCode]);
 
   const set = (key) => (e) => {
     setFields(prev => ({ ...prev, [key]: e.target.value }));
@@ -16,11 +37,22 @@ function CompanyForm({ initial, allCompanies, editingId, onSave, onClose, title 
   const handleSubmit = (e) => {
     e.preventDefault();
     const validationErrors = validateCompany(fields, allCompanies, editingId);
+    const code = (fields.registrationCode || '').trim();
+    if (code.length > 0 && code.length < 4) validationErrors.registrationCode = 'Code must be at least 4 characters.';
+    if (codeStatus === 'taken') validationErrors.registrationCode = 'This code is already in use.';
+    if (codeStatus === 'checking') validationErrors.registrationCode = 'Still checking availability…';
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
     onSave(fields);
+  };
+
+  const codeIndicator = () => {
+    if (codeStatus === 'checking')  return <span className="ms-2 small text-muted"><Spinner size="sm" /> Checking…</span>;
+    if (codeStatus === 'taken')     return <span className="ms-2 small text-danger fw-bold">Already in use</span>;
+    if (codeStatus === 'available') return <span className="ms-2 small text-success fw-bold">Available</span>;
+    return null;
   };
 
   return (
@@ -84,6 +116,25 @@ function CompanyForm({ initial, allCompanies, editingId, onSave, onClose, title 
               className="bg-light border-0 shadow-none py-2 rounded-3"
             />
             <Form.Control.Feedback type="invalid">{errors.address}</Form.Control.Feedback>
+          </Col>
+          <Col md={6} className="mb-3">
+            <Form.Label className="small fw-bold text-muted text-uppercase d-flex align-items-center">
+              Client Registration Code
+              {codeIndicator()}
+            </Form.Label>
+            <Form.Control
+              type="text"
+              value={fields.registrationCode || ''}
+              onChange={e => { setFields(prev => ({ ...prev, registrationCode: e.target.value.toUpperCase() })); setErrors(prev => ({ ...prev, registrationCode: '' })); }}
+              isInvalid={!!errors.registrationCode || codeStatus === 'taken'}
+              isValid={codeStatus === 'available'}
+              className="bg-light border-0 shadow-none py-2 rounded-3"
+              style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}
+            />
+            <Form.Control.Feedback type="invalid">{errors.registrationCode}</Form.Control.Feedback>
+            <div className="text-muted mt-1" style={{ fontSize: '0.72rem' }}>
+              Clients will enter this code to link their account. Must be unique across all firms. Leave blank to set later.
+            </div>
           </Col>
         </Row>
 

@@ -18,6 +18,7 @@ export default function MagicLogin({ onLoginSuccess, onGoToLogin }) {
     validateMagicLink(token)
       .then((user) => {
         storeUser(user);
+        window.history.replaceState({}, '', '/');
         onLoginSuccess(user);
       })
       .catch((err) => {

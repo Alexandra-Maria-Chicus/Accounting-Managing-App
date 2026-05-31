@@ -1,4 +1,5 @@
 from ..base import Base
+from .organization import Organization
 from .company import Company
 from .contact_person import ContactPerson
 from .observation import Observation
@@ -10,3 +11,4 @@ from .user import User
 from .log import Log
 from .suspicious_user import SuspiciousUser
 from .auth_token import AuthToken
+from .app_settings import AppSettings

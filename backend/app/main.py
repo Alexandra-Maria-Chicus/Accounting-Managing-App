@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import records, companies, generator, ws_router, auth, chat, logs, analytics
+from app.routers import records, companies, generator, ws_router, auth, chat, logs
 from app.routers.graphql_router import graphql_app
 from app.db.session import SessionLocal
 from app.db.models.auth_token import AuthToken  # noqa: F401 — registers model with Base
@@ -34,7 +34,7 @@ app.include_router(ws_router.router)
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(logs.router)
-app.include_router(analytics.router)
+
 app.include_router(graphql_app, prefix="/graphql")
 
 

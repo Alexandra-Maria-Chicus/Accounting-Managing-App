@@ -14,12 +14,13 @@ from app.db.models import User
 from app.db.models.auth_token import AuthToken
 from app.db.models.role_permission import RolePermission
 from app.db.models.permission import Permission
+from app.db.models.organization import Organization
 
 SECRET_KEY                  = os.getenv("SECRET_KEY", "super_secret_change_this")
 ALGORITHM                   = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
 REFRESH_TOKEN_EXPIRE_DAYS   = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS",   "7"))
-STAFF_REGISTRATION_CODE     = os.getenv("STAFF_REGISTRATION_CODE", "STAFF-2026")
+ADMIN_REGISTRATION_CODE     = os.getenv("ADMIN_REGISTRATION_CODE", "ADMIN-SIGNUP-2026")
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -56,13 +57,14 @@ def create_access_token(user: User, db: Session) -> str:
     permissions = _get_permissions_for_role(db, user.role_id)
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
-        "sub":         user.email,
-        "id":          user.id,
-        "role":        user.role.name,
-        "permissions": permissions,
-        "name":        user.name,
-        "company":     user.company.name if user.company else None,
-        "exp":         expire,
+        "sub":             user.email,
+        "id":              user.id,
+        "role":            user.role.name,
+        "permissions":     permissions,
+        "name":            user.name,
+        "company":         user.company.name if user.company else None,
+        "organization_id": user.organization_id,
+        "exp":             expire,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 

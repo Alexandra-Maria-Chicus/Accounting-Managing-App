@@ -15,7 +15,7 @@ def list_companies(
     db: Session = Depends(get_db),
     _user: dict = Depends(get_current_user),
 ):
-    return company_service.get_all(db)
+    return company_service.get_all(db, organization_id=_user.get("organization_id"))
 
 
 @router.get("/{company_id}", response_model=Company)
@@ -37,7 +37,7 @@ def create_company(
     _user: dict = Depends(require_permission("manage_companies")),
 ):
     try:
-        return company_service.create(db, data)
+        return company_service.create(db, data, organization_id=_user.get("organization_id"))
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
 

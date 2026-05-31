@@ -4,15 +4,29 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 MAILTRAP_HOST     = os.getenv("MAILTRAP_HOST",     "sandbox.smtp.mailtrap.io")
-MAILTRAP_PORT     = int(os.getenv("MAILTRAP_PORT", "587"))
+MAILTRAP_PORT     = int(os.getenv("MAILTRAP_PORT", "2525"))
 MAILTRAP_USERNAME = os.getenv("MAILTRAP_USERNAME", "")
 MAILTRAP_PASSWORD = os.getenv("MAILTRAP_PASSWORD", "")
 MAIL_FROM         = os.getenv("MAIL_FROM",         "noreply@completcont.ro")
 MAIL_FROM_NAME    = os.getenv("MAIL_FROM_NAME",    "Complet Cont")
 FRONTEND_URL      = os.getenv("FRONTEND_URL",      "http://localhost:5173")
 
+# When MAILTRAP_USERNAME is not set, emails are only printed to console.
+# Set MAILTRAP_USERNAME + MAILTRAP_PASSWORD (or any SMTP creds) to actually send.
+SMTP_ENABLED = bool(MAILTRAP_USERNAME and MAILTRAP_PASSWORD)
 
-async def _send(to_email: str, subject: str, html_body: str) -> None:
+
+async def _send(to_email: str, subject: str, html_body: str, plain_link: str) -> None:
+    # Always print the link so it works locally without any email setup
+    print(f"\n{'='*60}")
+    print(f"[EMAIL] To: {to_email}")
+    print(f"[EMAIL] Subject: {subject}")
+    print(f"[EMAIL] Link: {plain_link}")
+    print(f"{'='*60}\n")
+
+    if not SMTP_ENABLED:
+        return
+
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"]    = f"{MAIL_FROM_NAME} <{MAIL_FROM}>"
@@ -25,8 +39,8 @@ async def _send(to_email: str, subject: str, html_body: str) -> None:
         port=MAILTRAP_PORT,
         username=MAILTRAP_USERNAME,
         password=MAILTRAP_PASSWORD,
-        use_tls=True,
-        start_tls=False,
+        start_tls=True,
+        use_tls=False,
     )
 
 
@@ -48,7 +62,7 @@ async def send_password_reset(to_email: str, token: str) -> None:
       <p style="color:#bbb; font-size:0.8rem;">Or copy this link: {link}</p>
     </div>
     """
-    await _send(to_email, "Reset your Complet Cont password", html)
+    await _send(to_email, "Reset your Complet Cont password", html, link)
 
 
 async def send_magic_link(to_email: str, token: str) -> None:
@@ -69,25 +83,26 @@ async def send_magic_link(to_email: str, token: str) -> None:
       <p style="color:#bbb; font-size:0.8rem;">Or copy this link: {link}</p>
     </div>
     """
-    await _send(to_email, "Your Complet Cont login link", html)
+    await _send(to_email, "Your Complet Cont login link", html, link)
+
 
 async def send_2fa_login_link(to_email: str, token: str) -> None:
-    # Pointing directly to a new 2fa landing view route on your frontend
     link = f"{FRONTEND_URL}/verify-login-link/{token}"
     html = f"""
     <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
       <h2 style="color: #FF6B00;">Complet Cont</h2>
-      <p>Please confirm your sign-in attempt. Click the button below to log in safely:</p>
+      <p>You entered your password correctly. Click the button below to complete sign in.</p>
       <a href="{link}"
          style="display:inline-block; background:#FF6B00; color:#fff;
                 padding:12px 28px; border-radius:8px; text-decoration:none;
                 font-weight:bold; margin: 16px 0;">
-        Confirm & Sign In
+        Complete Sign In
       </a>
       <p style="color:#888; font-size:0.85rem;">
-        This link expires in 10 minutes and can only be used once.
+        This link expires in 15 minutes and can only be used once.
+        If you did not attempt to sign in, ignore this email.
       </p>
-      <p style="color:#bbb; font-size:0.8rem;">Or copy this URL: {link}</p>
+      <p style="color:#bbb; font-size:0.8rem;">Or copy this link: {link}</p>
     </div>
     """
-    await _send(to_email, "Confirm your Complet Cont sign-in attempt", html)
+    await _send(to_email, "Complete your Complet Cont sign in", html, link)

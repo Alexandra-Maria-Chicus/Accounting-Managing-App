@@ -4,8 +4,10 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Record
 
-def get_all(db, page, page_size, month=None, year=None):
+def get_all(db, page, page_size, month=None, year=None, organization_id=None):
     query = db.query(Record)
+    if organization_id is not None:
+        query = query.filter(Record.organization_id == organization_id)
     if month is not None:
         query = query.filter(Record.periodMonth == month)
     if year is not None:
@@ -23,7 +25,7 @@ def get_all(db, page, page_size, month=None, year=None):
 def get_by_id(db: Session, record_id: int) -> Optional[Record]:
     return db.query(Record).filter(Record.id == record_id).first()
 
-def create(db: Session, data) -> Record:
+def create(db: Session, data, organization_id=None) -> Record:
     record = Record(
         firm=data.firm,
         employee=data.employee,
@@ -31,6 +33,7 @@ def create(db: Session, data) -> Record:
         periodMonth=data.periodMonth,
         periodYear=data.periodYear,
         dateBrought=data.dateBrought,
+        organization_id=organization_id,
     )
     db.add(record)
     db.commit()
@@ -59,8 +62,11 @@ def delete(db: Session, record_id: int) -> bool:
     db.commit()
     return True
 
-def get_stats(db):
-    records = db.query(Record).all()
+def get_stats(db, organization_id=None):
+    query = db.query(Record)
+    if organization_id is not None:
+        query = query.filter(Record.organization_id == organization_id)
+    records = query.all()
     return {
         "total": len(records),
         "by_status": dict(Counter(r.status for r in records)),

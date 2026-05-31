@@ -29,10 +29,7 @@ def test_login_success(raw_client):
     r = raw_client.post("/auth/login", json={"email": "admin@test.com", "password": "admin123"})
     assert r.status_code == 200
     data = r.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
-    assert data["email"] == "admin@test.com"
-    assert data["role"] == "admin"
+    assert data.get("requires_2fa") is True
 
 
 def test_login_wrong_password(raw_client):
@@ -133,8 +130,14 @@ def test_register_second_user_with_same_firm_code(raw_client):
 # ── /auth/me ──────────────────────────────────────────────────────────────────
 
 def test_me_returns_current_user(raw_client):
-    login = raw_client.post("/auth/login", json={"email": "admin@test.com", "password": "admin123"})
-    token = login.json()["access_token"]
+    from tests.conftest import TestingSessionLocal
+    from app.services import auth_service
+    from app.db.models.user import User
+
+    db = TestingSessionLocal()
+    user = db.query(User).filter(User.email == "admin@test.com").first()
+    token = auth_service.create_access_token(user, db)
+    db.close()
 
     r = raw_client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200

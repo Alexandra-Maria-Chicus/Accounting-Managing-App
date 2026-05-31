@@ -9,9 +9,13 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
   const [editingCompany, setEditingCompany] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
 
-  const totalPages = Math.ceil(companies.length / PAGE_SIZE);
-  const paginated = companies.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const filtered = search.trim()
+    ? companies.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+    : companies;
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleAdd = async (fields) => {
     await onAdd(fields);
@@ -56,6 +60,7 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
           address: editingCompany.address,
           contactName: editingCompany.contact_person?.name ?? '',
           contactEmail: editingCompany.contact_person?.email ?? '',
+          registrationCode: editingCompany.registration_code ?? '',
         }}
         onSave={handleEdit}
         onClose={() => setSubView('list')}
@@ -65,7 +70,7 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
 
   return (
     <div className="page-fade-in">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-3">
         <div>
           <h4 className="fw-bold m-0" style={{ color: '#001529' }}>Companies</h4>
           <p className="text-muted small mb-0">{companies.length} registered companies</p>
@@ -79,6 +84,28 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
             + Add Company
           </Button>
         )}
+      </div>
+
+      <div className="mb-3">
+        <div className="d-flex align-items-center gap-2 px-3 rounded-3" style={{ background: '#f1f5f9', maxWidth: '320px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            className="border-0 bg-transparent py-2 w-100"
+            style={{ outline: 'none', fontSize: '0.875rem', color: '#1a1a1a' }}
+            placeholder="Search by name…"
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+          />
+          {search && (
+            <button className="border-0 bg-transparent p-0 text-muted" style={{ lineHeight: 1 }} onClick={() => { setSearch(''); setPage(1); }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
@@ -173,8 +200,10 @@ function CompaniesAdmin({ companies, onAdd, onEdit, onDelete, onViewCompany, isA
           </tbody>
         </Table>
 
-        {companies.length === 0 && (
-          <div className="text-center py-5 text-muted">No companies yet. Add one to get started.</div>
+        {filtered.length === 0 && (
+          <div className="text-center py-5 text-muted">
+            {search.trim() ? `No companies matching "${search}".` : 'No companies yet. Add one to get started.'}
+          </div>
         )}
 
         {totalPages > 1 && (

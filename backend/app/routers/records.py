@@ -19,7 +19,7 @@ def list_records(
     db: Session = Depends(get_db),
     _user: dict = Depends(get_current_user),
 ):
-    return record_service.get_all(db, page, page_size, month, year)
+    return record_service.get_all(db, page, page_size, month, year, organization_id=_user.get("organization_id"))
 
 
 @router.get("/stats")
@@ -27,7 +27,7 @@ def get_stats(
     db: Session = Depends(get_db),
     _user: dict = Depends(require_permission("read_records")),
 ):
-    return record_service.get_stats(db)
+    return record_service.get_stats(db, organization_id=_user.get("organization_id"))
 
 
 @router.get("/{record_id}", response_model=Record)
@@ -48,7 +48,7 @@ def create_record(
     db: Session = Depends(get_db),
     _user: dict = Depends(require_permission("write_records")),
 ):
-    return record_service.create(db, data)
+    return record_service.create(db, data, organization_id=_user.get("organization_id"))
 
 
 @router.put("/{record_id}", response_model=Record)

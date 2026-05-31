@@ -92,11 +92,11 @@ class CompanyBase(BaseModel):
 
 
 class CompanyCreate(CompanyBase):
-    pass
+    registration_code: Optional[str] = None
 
 
 class CompanyUpdate(CompanyBase):
-    pass
+    registration_code: Optional[str] = None
 
 
 class Company(CompanyBase):

@@ -68,11 +68,12 @@ function App() {
   const [detailBackView, setDetailBackView] = useState('table');
   const [deletingEntryId, setDeletingEntryId] = useState(null);
   const [slidingOutId, setSlidingOutId] = useState(null);
+  const [docSearch, setDocSearch] = useState('');
 const [view, setView] = useState(() => {
     const path = window.location.pathname;
     if (path.startsWith('/reset-password/')) return 'reset-password';
     if (path.startsWith('/magic/'))          return 'magic-login';
-    if (path.startsWith('/verify-login-link/')) return 'verify-login-link'; // Added context parameter path target match hook
+    if (path.startsWith('/verify-login-link/')) return 'verify-login-link';
     const u = getStoredUser();
     if (!u) return 'home';
     if (u.role === 'client') return 'details';
@@ -341,14 +342,14 @@ const handleLoginSuccess = async (user) => {
   // ── Companies CRUD ────────────────────────────────────────────────────────────
 
   const handleAddCompany = async (fields) => {
-    const data = { name: fields.name, email: fields.email, phone: fields.phone, address: fields.address, contactPerson: { name: fields.contactName, email: fields.contactEmail } };
+    const data = { name: fields.name, email: fields.email, phone: fields.phone, address: fields.address, contactPerson: { name: fields.contactName, email: fields.contactEmail }, registration_code: fields.registrationCode?.trim().toUpperCase() || null };
     const newComp = await api.createCompany(data);
     setCompanies(prev => [...prev, newComp]);
     return newComp;
   };
 
   const handleEditCompany = async (id, fields) => {
-    const data = { name: fields.name, email: fields.email, phone: fields.phone, address: fields.address, contactPerson: { name: fields.contactName, email: fields.contactEmail } };
+    const data = { name: fields.name, email: fields.email, phone: fields.phone, address: fields.address, contactPerson: { name: fields.contactName, email: fields.contactEmail }, registration_code: fields.registrationCode?.trim().toUpperCase() ?? null };
     const updated = await api.updateCompany(id, data);
     setCompanies(prev => prev.map(c => c.id === id ? updated : c));
     return updated;
@@ -410,6 +411,7 @@ const handleLoginSuccess = async (user) => {
       {view === 'register' && <RegisterPage onGoToLogin={() => setView('login')} onLoginSuccess={handleLoginSuccess} />}
       {view === 'reset-password' && <ResetPassword onGoToLogin={() => setView('login')} />}
       {view === 'magic-login' && <MagicLogin onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
+      {view === 'verify-login-link' && <LinkVerifyLanding onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
       
       {isAppView && (
         <>
@@ -434,15 +436,25 @@ const handleLoginSuccess = async (user) => {
             <Navbar.Collapse id="main-nav">
   {!isClient && (
     <Nav className="me-auto mt-2 mt-lg-0">
-      <div className="nav-pill-track">
-        <div className="nav-pill" style={{
-          transform: activeNav === 'logs' ? 'translateX(200%)' : activeNav === 'companies' ? 'translateX(100%)' : 'translateX(0)',
-          width: isAdmin ? 'calc((100% - 8px) / 3)' : 'calc(50% - 4px)'
-        }} />
-        <button className={`nav-pill-btn${activeNav === 'table' ? ' active' : ''}`} onClick={() => setView('table')}>Documents</button>
-        <button className={`nav-pill-btn${activeNav === 'companies' ? ' active' : ''}`} onClick={() => setView('companies')}>Companies</button>
-        {isAdmin && <button className={`nav-pill-btn${activeNav === 'logs' ? ' active' : ''}`} onClick={() => setView('logs')}>Logs</button>}
-      </div>
+      {(() => {
+        const tabs = isAdmin
+          ? [{ key: 'table', label: 'Documents' }, { key: 'companies', label: 'Companies' }, { key: 'logs', label: 'Logs' }]
+          : [{ key: 'table', label: 'Documents' }, { key: 'companies', label: 'Companies' }];
+        const activeIdx = tabs.findIndex(t => t.key === activeNav);
+        return (
+          <div className="nav-pill-track" style={{ display: 'grid', gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+            <div className="nav-pill" style={{
+              transform: `translateX(${activeIdx * 100}%)`,
+              width: `calc(100% / ${tabs.length})`,
+            }} />
+            {tabs.map(t => (
+              <button key={t.key} className={`nav-pill-btn${activeNav === t.key ? ' active' : ''}`} onClick={() => setView(t.key)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        );
+      })()}
     </Nav>
   )}
   <Nav className={`align-items-center d-flex gap-3 mt-2 mt-lg-0 ${isClient ? 'ms-auto' : ''}`}>
@@ -456,7 +468,14 @@ const handleLoginSuccess = async (user) => {
         <span className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>{currentUser?.role}</span>
       </div>
     </div>
-    <Button variant="link" className="text-muted p-0 ms-1 shadow-none" title="Team Chat" onClick={() => setShowChat(prev => !prev)}>💬</Button>
+    <Button variant="link" className="p-0 ms-1 shadow-none d-flex align-items-center gap-1 fw-semibold" title="Messages"
+      style={{ color: showChat ? '#FF6B00' : '#6c757d', fontSize: '0.82rem', textDecoration: 'none' }}
+      onClick={() => setShowChat(prev => !prev)}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      Messages
+    </Button>
     <Button variant="link" className="text-muted p-0 ms-1 shadow-none" title="Log out" onClick={handleLogout}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -514,6 +533,27 @@ const handleLoginSuccess = async (user) => {
                         </Button>
                       )}
                     </Col>
+                    <Col xs={12} className="mt-1">
+                      <div className="d-flex align-items-center gap-2 px-3 rounded-3" style={{ background: '#f1f5f9', maxWidth: '320px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input
+                          className="border-0 bg-transparent py-2 w-100"
+                          style={{ outline: 'none', fontSize: '0.875rem', color: '#1a1a1a' }}
+                          placeholder="Search by firm name…"
+                          value={docSearch}
+                          onChange={e => setDocSearch(e.target.value)}
+                        />
+                        {docSearch && (
+                          <button className="border-0 bg-transparent p-0 text-muted" style={{ lineHeight: 1 }} onClick={() => setDocSearch('')}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </Col>
                   </Row>
                 </Card>
 
@@ -530,7 +570,7 @@ const handleLoginSuccess = async (user) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {entries.map((item) => (
+                      {(docSearch.trim() ? entries.filter(e => e.firm.toLowerCase().includes(docSearch.toLowerCase())) : entries).map((item) => (
                         <tr key={item.id} className={`align-middle${slidingOutId === item.id ? ' row-slide-out' : ''}`}>
                           <td className="ps-4 fw-medium" style={{ cursor: 'pointer', color: '#FF6B00' }} onClick={() => openCompanyDetail(item.firm, 'table')}>
                             {item.firm}
@@ -570,6 +610,9 @@ const handleLoginSuccess = async (user) => {
 
                   {entries.length === 0 && !loadingMore && (
                     <div className="text-center py-5 text-muted">No documents found for this period.</div>
+                  )}
+                  {entries.length > 0 && docSearch.trim() && entries.filter(e => e.firm.toLowerCase().includes(docSearch.toLowerCase())).length === 0 && (
+                    <div className="text-center py-5 text-muted">No documents matching "{docSearch}".</div>
                   )}
 
                   {/* Infinite scroll sentinel */}
@@ -619,8 +662,8 @@ const handleLoginSuccess = async (user) => {
         </>
       )}
       {showChat && isAppView && currentUser && (
-        <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '380px', zIndex: 1000 }}>
-          <Chat currentUser={currentUser} />
+        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+          <Chat currentUser={currentUser} onClose={() => setShowChat(false)} />
         </div>
       )}
     </>

@@ -41,7 +41,6 @@ def get_suspicious(
             "reason":         f.reason,
             "detected_at":    f.detected_at.isoformat() if f.detected_at else "",
             "resolved":       f.resolved,
-            "ai_explanation": f.ai_explanation or "",
         }
         for f in flags
     ]

@@ -36,7 +36,7 @@ export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
     setLoading(true);
     try {
       const response = await loginUser(email, password);
-      if (response.requires_link_confirmation) {
+      if (response.requires_2fa || response.requires_link_confirmation) {
         setLinkSent(true);
       } else {
         onLoginSuccess(response);
@@ -194,9 +194,6 @@ export default function LoginPage({ onLoginSuccess, onGoToRegister }) {
           )}
         </Card>
 
-        <div className="text-center mt-3 small text-muted">
-          Admin: <code style={{ color: '#FF6B00' }}>admin@completcont.ro</code> / <code style={{ color: '#FF6B00' }}>admin123</code>
-        </div>
       </Container>
     </div>
   );

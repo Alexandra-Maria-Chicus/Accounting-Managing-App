@@ -1,15 +1,47 @@
-import { useState } from 'react';
-import { Container, Card, Form, Button, Alert, Row, Col } from 'react-bootstrap';
+import { useState, useEffect, useRef } from 'react';
+import { Container, Card, Form, Button, Alert, Row, Col, Spinner } from 'react-bootstrap';
 import { registerUser } from './api';
+
+const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+
+function useCodeCheck(code, enabled) {
+  const [status, setStatus] = useState('idle'); // 'idle' | 'checking' | 'taken' | 'available'
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (!enabled || !code || code.trim().length < 4) {
+      setStatus('idle');
+      return;
+    }
+    setStatus('checking');
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${BASE}/auth/check-code?code=${encodeURIComponent(code.trim())}`);
+        const data = await res.json();
+        setStatus(data.taken ? 'taken' : 'available');
+      } catch {
+        setStatus('idle');
+      }
+    }, 450);
+    return () => clearTimeout(timerRef.current);
+  }, [code, enabled]);
+
+  return status;
+}
 
 export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
   const [role,      setRole]      = useState('employee');
   const [fields,    setFields]    = useState({ name: '', email: '', password: '', confirm: '' });
   const [staffCode, setStaffCode] = useState('');
   const [firmCode,  setFirmCode]  = useState('');
+  const [orgName,   setOrgName]   = useState('');
   const [errors,    setErrors]    = useState({});
   const [serverErr, setServerErr] = useState('');
   const [loading,   setLoading]   = useState(false);
+
+  // Real-time uniqueness checks (only for codes that must be globally unique)
+  const staffCodeCheck = useCodeCheck(staffCode, role === 'admin');
 
   const setField = (key) => (e) => {
     setFields(prev => ({ ...prev, [key]: e.target.value }));
@@ -19,14 +51,22 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
 
   const validate = () => {
     const e = {};
-    if (!fields.name.trim())                e.name     = 'Full name is required.';
-    else if (fields.name.trim().length < 2) e.name     = 'Name must be at least 2 characters.';
-    if (!fields.email.trim())               e.email    = 'Email is required.';
+    if (!fields.name.trim())              e.name     = 'Full name is required.';
+    else if (fields.name.trim().length < 2) e.name   = 'Name must be at least 2 characters.';
+    if (!fields.email.trim())             e.email    = 'Email is required.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) e.email = 'Enter a valid email address.';
-    if (!fields.password)                   e.password = 'Password is required.';
-    else if (fields.password.length < 6)    e.password = 'Password must be at least 6 characters.';
-    if (!fields.confirm)                    e.confirm  = 'Please confirm your password.';
+    if (!fields.password)                 e.password = 'Password is required.';
+    else if (fields.password.length < 6) e.password = 'Password must be at least 6 characters.';
+    if (!fields.confirm)                  e.confirm  = 'Please confirm your password.';
     else if (fields.confirm !== fields.password) e.confirm = 'Passwords do not match.';
+
+    if (role === 'admin') {
+      if (!orgName.trim())    e.orgName   = 'Organisation name is required.';
+      if (!staffCode.trim())  e.staffCode = 'Staff code is required.';
+      else if (staffCode.trim().length < 4) e.staffCode = 'Staff code must be at least 4 characters.';
+      else if (staffCodeCheck === 'taken')  e.staffCode = 'This code is already in use. Choose a different one.';
+      else if (staffCodeCheck === 'checking') e.staffCode = 'Still checking availability…';
+    }
     if (role === 'employee' && !staffCode.trim()) e.staffCode = 'Staff code is required.';
     if (role === 'client'   && !firmCode.trim())  e.firmCode  = 'Firm code is required.';
     return e;
@@ -44,18 +84,43 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
         email:     fields.email,
         password:  fields.password,
         role,
-        staffCode: role === 'employee' ? staffCode : null,
-        firmCode:  role === 'client'   ? firmCode  : null,
+        orgName:   role === 'admin'  ? orgName   : null,
+        staffCode: role !== 'client' ? staffCode : null,
+        firmCode:  role === 'client' ? firmCode  : null,
       });
       onLoginSuccess(user);
     } catch (err) {
-      if (err.status === 409) setErrors({ email: 'This email is already registered.' });
-      else if (err.status === 403) setErrors({ staffCode: 'Invalid staff code.' });
-      else if (err.status === 404) setErrors({ firmCode: 'No company found with that code. Check the code your accountant gave you.' });
+      if (err.status === 409 && err.message?.toLowerCase().includes('email'))
+        setErrors({ email: 'This email is already registered.' });
+      else if (err.status === 409)
+        setErrors({ staffCode: 'This code is already in use. Choose a different one.' });
+      else if (err.status === 403 && role === 'employee')
+        setErrors({ staffCode: 'Invalid staff code. Check with your administrator.' });
+      else if (err.status === 404)
+        setErrors({ firmCode: 'No company found with that code. Check the code your accountant gave you.' });
       else setServerErr(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const roleOptions = [
+    { value: 'admin',    label: 'Admin'    },
+    { value: 'employee', label: 'Employee' },
+    { value: 'client',   label: 'Client'   },
+  ];
+
+  const roleDescriptions = {
+    admin:    'Create a new accounting firm. You will need the admin registration code.',
+    employee: 'Join an accounting firm as staff. Enter the code your administrator gave you.',
+    client:   'Link your company account. Enter the code your accountant gave you.',
+  };
+
+  const codeCheckIndicator = (checkStatus) => {
+    if (checkStatus === 'checking')  return <span className="ms-2 small text-muted"><Spinner size="sm" /> Checking…</span>;
+    if (checkStatus === 'taken')     return <span className="ms-2 small text-danger fw-bold">Already in use</span>;
+    if (checkStatus === 'available') return <span className="ms-2 small text-success fw-bold">Available</span>;
+    return null;
   };
 
   return (
@@ -77,14 +142,11 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
             <Form.Group className="mb-4">
               <Form.Label className="small fw-bold text-muted text-uppercase">Account type</Form.Label>
               <div className="d-flex gap-2 mt-1">
-                {[
-                  { value: 'employee', label: '👔 Employee' },
-                  { value: 'client',   label: '🏢 Client'   },
-                ].map(opt => (
+                {roleOptions.map(opt => (
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => { setRole(opt.value); setErrors({}); setServerErr(''); }}
+                    onClick={() => { setRole(opt.value); setErrors({}); setServerErr(''); setStaffCode(''); setFirmCode(''); setAdminCode(''); setOrgName(''); }}
                     className="flex-fill py-2 rounded-3 border fw-bold small"
                     style={{
                       backgroundColor: role === opt.value ? '#FF6B00' : '#f8f9fa',
@@ -99,19 +161,56 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
                 ))}
               </div>
               <div className="text-muted mt-2" style={{ fontSize: '0.75rem' }}>
-                {role === 'employee'
-                  ? 'For accounting staff. You will need the staff access code.'
-                  : 'For company clients. You will need the code your accountant gave you.'}
+                {roleDescriptions[role]}
               </div>
             </Form.Group>
 
-            {/* Staff code — employee only */}
+            {/* Admin fields */}
+            {role === 'admin' && (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label className="small fw-bold text-muted text-uppercase">Organisation name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={orgName}
+                    onChange={(e) => { setOrgName(e.target.value); setErrors(prev => ({ ...prev, orgName: '' })); }}
+                    isInvalid={!!errors.orgName}
+                    className="bg-light border-0 shadow-none py-2 rounded-3"
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.orgName}</Form.Control.Feedback>
+                  <div className="text-muted mt-1" style={{ fontSize: '0.72rem' }}>
+                    The name of your accounting firm.
+                  </div>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="small fw-bold text-muted text-uppercase d-flex align-items-center">
+                    Staff registration code
+                    {codeCheckIndicator(staffCodeCheck)}
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={staffCode}
+                    onChange={(e) => { setStaffCode(e.target.value.toUpperCase()); setErrors(prev => ({ ...prev, staffCode: '' })); }}
+                    isInvalid={!!errors.staffCode || staffCodeCheck === 'taken'}
+                    isValid={staffCodeCheck === 'available' && staffCode.length >= 4}
+                    className="bg-light border-0 shadow-none py-2 rounded-3"
+                    style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.staffCode}</Form.Control.Feedback>
+                  <div className="text-muted mt-1" style={{ fontSize: '0.72rem' }}>
+                    Your employees will enter this code when creating their accounts. Must be unique across all firms.
+                  </div>
+                </Form.Group>
+              </>
+            )}
+
+            {/* Employee staff code */}
             {role === 'employee' && (
               <Form.Group className="mb-3">
-                <Form.Label className="small fw-bold text-muted text-uppercase">Staff access code</Form.Label>
+                <Form.Label className="small fw-bold text-muted text-uppercase">Staff code</Form.Label>
                 <Form.Control
                   type="password"
-                  placeholder="Enter the staff code"
                   value={staffCode}
                   onChange={(e) => { setStaffCode(e.target.value); setErrors(prev => ({ ...prev, staffCode: '' })); }}
                   isInvalid={!!errors.staffCode}
@@ -119,18 +218,17 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
                 />
                 <Form.Control.Feedback type="invalid">{errors.staffCode}</Form.Control.Feedback>
                 <div className="text-muted mt-1" style={{ fontSize: '0.72rem' }}>
-                  Provided by management. Contact your administrator if you don't have it.
+                  Provided by your administrator.
                 </div>
               </Form.Group>
             )}
 
-            {/* Firm code — client only */}
+            {/* Client firm code */}
             {role === 'client' && (
               <Form.Group className="mb-3">
                 <Form.Label className="small fw-bold text-muted text-uppercase">Firm registration code</Form.Label>
                 <Form.Control
                   type="text"
-                  placeholder="e.g. ACME-2026"
                   value={firmCode}
                   onChange={(e) => { setFirmCode(e.target.value.toUpperCase()); setErrors(prev => ({ ...prev, firmCode: '' })); }}
                   isInvalid={!!errors.firmCode}
@@ -139,7 +237,7 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
                 />
                 <Form.Control.Feedback type="invalid">{errors.firmCode}</Form.Control.Feedback>
                 <div className="text-muted mt-1" style={{ fontSize: '0.72rem' }}>
-                  Your accountant provided this code privately. It links your account to your company.
+                  Provided privately by your accountant.
                 </div>
               </Form.Group>
             )}
@@ -149,7 +247,6 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
               <Form.Label className="small fw-bold text-muted text-uppercase">Full name</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Maria Chicus"
                 value={fields.name}
                 onChange={setField('name')}
                 isInvalid={!!errors.name}
@@ -163,7 +260,6 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
               <Form.Label className="small fw-bold text-muted text-uppercase">Email</Form.Label>
               <Form.Control
                 type="email"
-                placeholder="you@example.com"
                 value={fields.email}
                 onChange={setField('email')}
                 isInvalid={!!errors.email}
@@ -179,7 +275,6 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
                   <Form.Label className="small fw-bold text-muted text-uppercase">Password</Form.Label>
                   <Form.Control
                     type="password"
-                    placeholder="Min. 6 characters"
                     value={fields.password}
                     onChange={setField('password')}
                     isInvalid={!!errors.password}
@@ -193,7 +288,6 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
                   <Form.Label className="small fw-bold text-muted text-uppercase">Confirm</Form.Label>
                   <Form.Control
                     type="password"
-                    placeholder="Repeat password"
                     value={fields.confirm}
                     onChange={setField('confirm')}
                     isInvalid={!!errors.confirm}
@@ -208,7 +302,7 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
               type="submit"
               className="w-100 py-2 fw-bold border-0 rounded-3"
               style={{ backgroundColor: '#FF6B00' }}
-              disabled={loading}
+              disabled={loading || (role === 'admin' && staffCodeCheck === 'checking')}
             >
               {loading ? 'Creating account…' : 'Create Account'}
             </Button>

@@ -6,8 +6,11 @@ from app.db.models import Company, ContactPerson, Observation
 from app.models.company import CompanyCreate, CompanyUpdate, ObservationCreate
 
 
-def get_all(db: Session) -> List[Company]:
-    return db.query(Company).all()
+def get_all(db: Session, organization_id: int = None) -> List[Company]:
+    q = db.query(Company)
+    if organization_id is not None:
+        q = q.filter(Company.organization_id == organization_id)
+    return q.all()
 
 
 def get_by_id(db: Session, company_id: int) -> Optional[Company]:
@@ -20,14 +23,24 @@ def get_by_registration_code(db: Session, code: str) -> Optional[Company]:
     ).first()
 
 
-def create(db: Session, data: CompanyCreate) -> Company:
-    if db.query(Company).filter(Company.name.ilike(data.name)).first():
-        raise ValueError(f"Company with name '{data.name}' already exists")
+def create(db: Session, data: CompanyCreate, organization_id: int = None) -> Company:
+    existing = db.query(Company).filter(
+        Company.name.ilike(data.name),
+        Company.organization_id == organization_id,
+    ).first()
+    if existing:
+        raise ValueError(f"Company with name '{data.name}' already exists in your organisation")
+    reg_code = data.registration_code.strip().upper() if data.registration_code and data.registration_code.strip() else None
+    if reg_code:
+        if get_by_registration_code(db, reg_code):
+            raise ValueError(f"Registration code '{reg_code}' is already in use")
     company = Company(
         name=data.name,
         phone=data.phone,
         email=data.email,
         address=data.address,
+        organization_id=organization_id,
+        registration_code=reg_code,
     )
     db.add(company)
     db.flush()
@@ -58,6 +71,13 @@ def update(db: Session, company_id: int, data: CompanyUpdate) -> Optional[Compan
     company.address = data.address
     company.contactPerson.name = data.contactPerson.name
     company.contactPerson.email = data.contactPerson.email
+    if data.registration_code is not None:
+        reg_code = data.registration_code.strip().upper() if data.registration_code.strip() else None
+        if reg_code:
+            existing = get_by_registration_code(db, reg_code)
+            if existing and existing.id != company_id:
+                raise ValueError(f"Registration code '{reg_code}' is already in use")
+        company.registration_code = reg_code
     db.commit()
     db.refresh(company)
     return company

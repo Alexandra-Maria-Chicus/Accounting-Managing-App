@@ -17,6 +17,7 @@ export default function LinkVerifyLanding({ onLoginSuccess, onGoToLogin }) {
     validate2FALink(token)
       .then((user) => {
         storeUser(user);
+        window.history.replaceState({}, '', '/');
         onLoginSuccess(user);
       })
       .catch((err) => {
