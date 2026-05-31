@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, Form, Button, Badge } from 'react-bootstrap';
 import { fetchUsers } from './api';
 
-const WS_BASE = import.meta.env.VITE_WS_BASE || 'ws://localhost:8000';
+const WS_BASE = import.meta.env.VITE_WS_BASE
+  || (typeof window !== 'undefined'
+      ? (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host
+      : 'ws://localhost:8000');
 
 function dmRoom(idA, idB) {
   return `dm_${Math.min(idA, idB)}_${Math.max(idA, idB)}`;

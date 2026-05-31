@@ -1,4 +1,5 @@
-const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const BASE = import.meta.env.VITE_API_BASE
+  || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000');
 const QUEUE_KEY = 'complet_cont_offline_queue';
 const TOKEN_KEY = 'cc_token';
 const USER_KEY  = 'cc_user';

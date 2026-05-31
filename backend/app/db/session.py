@@ -6,7 +6,9 @@ from sqlalchemy.orm import sessionmaker, Session
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")  # goes up to backend/
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)

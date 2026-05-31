@@ -189,7 +189,9 @@ const [view, setView] = useState(() => {
   useEffect(() => {
     let ws;
     try {
-      ws = new WebSocket(`${import.meta.env.VITE_WS_BASE || 'ws://localhost:8000'}/ws`);
+      const _wsBase = import.meta.env.VITE_WS_BASE
+        || (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host;
+      ws = new WebSocket(`${_wsBase}/ws`);
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'new_records') {

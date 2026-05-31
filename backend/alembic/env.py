@@ -16,15 +16,20 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+def _db_url():
+    url = os.getenv("DATABASE_URL", "")
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    return url
+
 def run_migrations_offline():
-    url = os.getenv("DATABASE_URL")
-    context.configure(url=url, target_metadata=target_metadata, literal_binds=True)
+    context.configure(url=_db_url(), target_metadata=target_metadata, literal_binds=True)
     with context.begin_transaction():
         context.run_migrations()
 
 def run_migrations_online():
     connectable = create_engine(
-        os.getenv("DATABASE_URL"),
+        _db_url(),
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
