@@ -7,6 +7,11 @@ __pycache__/
 # Environment files
 backend/.env
 .env
+deploy/.env
+
+# TLS certs (handled by Caddy in prod; self-signed for local dev only)
+backend/server.key
+backend/server.crt
 
 # Ignore specific files/folders
 Assignment0/

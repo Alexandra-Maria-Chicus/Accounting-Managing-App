@@ -1,0 +1,18 @@
+# Build context = repo root.
+# Stage 1: build the React app (Vite bakes env vars at BUILD time, so they're passed as ARGs)
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY my-complet-cont/package*.json ./
+RUN npm ci
+COPY my-complet-cont/ ./
+ARG VITE_API_BASE
+ARG VITE_WS_BASE
+ENV VITE_API_BASE=$VITE_API_BASE
+ENV VITE_WS_BASE=$VITE_WS_BASE
+RUN npm run build
+
+# Stage 2: Caddy serves the static build AND reverse-proxies the API + WebSockets,
+# automatically provisioning a Let's Encrypt certificate for $DOMAIN.
+FROM caddy:2-alpine
+COPY --from=build /app/dist /srv
+COPY deploy/Caddyfile /etc/caddy/Caddyfile

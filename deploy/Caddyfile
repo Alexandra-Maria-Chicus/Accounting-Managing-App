@@ -1,0 +1,22 @@
+# {$DOMAIN} is read from the DOMAIN env var passed to the caddy container.
+# Caddy automatically obtains + renews a Let's Encrypt cert for this hostname
+# (needs ports 80 and 443 reachable from the internet).
+{$DOMAIN} {
+	encode gzip
+
+	# Backend API + WebSocket routes -> FastAPI (uvicorn).
+	# reverse_proxy upgrades WebSocket connections automatically.
+	@backend path /auth/* /records/* /records /companies/* /companies /generator/* /logs/* /logs /graphql* /ws /ws/* /docs* /openapi.json /redoc*
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	# Everything else -> the React single-page app.
+	# Unknown paths fall back to index.html so client-side routes
+	# (/reset-password/..., /magic/..., /verify-login-link/...) work on refresh.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

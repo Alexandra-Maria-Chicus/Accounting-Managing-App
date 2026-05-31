@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: completcont
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: completcont
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U completcont"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongodata:/data/db
+
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://completcont:${POSTGRES_PASSWORD}@postgres:5432/completcont
+      MONGO_URL: mongodb://mongo:27017
+      MONGO_DB: completcont_chat
+      FRONTEND_URL: https://${DOMAIN}
+      # --- CHECK auth_service.py for the exact secret var name; set a strong random value ---
+      SECRET_KEY: ${SECRET_KEY}
+      # --- SMTP (your code reads MAILTRAP_* but they're generic SMTP creds) ---
+      MAILTRAP_HOST: ${SMTP_HOST}
+      MAILTRAP_PORT: ${SMTP_PORT}
+      MAILTRAP_USERNAME: ${SMTP_USERNAME}
+      MAILTRAP_PASSWORD: ${SMTP_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_FROM_NAME: Complet Cont
+    # No ports exposed to host — only Caddy talks to it over the internal network.
+
+  caddy:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        VITE_API_BASE: https://${DOMAIN}
+        VITE_WS_BASE: wss://${DOMAIN}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data      # persists Let's Encrypt certs across restarts (do NOT delete)
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  mongodata:
+  caddy_data:
+  caddy_config:
