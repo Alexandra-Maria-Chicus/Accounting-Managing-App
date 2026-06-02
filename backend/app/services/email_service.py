@@ -33,15 +33,19 @@ async def _send(to_email: str, subject: str, html_body: str, plain_link: str) ->
     msg["To"]      = to_email
     msg.attach(MIMEText(html_body, "html"))
 
-    await aiosmtplib.send(
-        msg,
-        hostname=MAILTRAP_HOST,
-        port=MAILTRAP_PORT,
-        username=MAILTRAP_USERNAME,
-        password=MAILTRAP_PASSWORD,
-        start_tls=True,
-        use_tls=False,
-    )
+    try:
+        await aiosmtplib.send(
+            msg,
+            hostname=MAILTRAP_HOST,
+            port=MAILTRAP_PORT,
+            username=MAILTRAP_USERNAME,
+            password=MAILTRAP_PASSWORD,
+            start_tls=True,
+            use_tls=False,
+        )
+        print("[EMAIL] Sent via SMTP.")
+    except Exception as exc:
+        print(f"[EMAIL] SMTP failed ({exc}); link was printed to console above.")
 
 
 async def send_password_reset(to_email: str, token: str) -> None:
