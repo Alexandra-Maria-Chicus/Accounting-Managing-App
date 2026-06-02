@@ -16,16 +16,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Remove ai_explanation column from suspicious_users
-    op.drop_column('suspicious_users', 'ai_explanation')
+    # Remove ai_explanation column from suspicious_users (if it was ever added)
+    op.drop_column('suspicious_users', 'ai_explanation', if_exists=True)
 
-    # Remove indexes added for gold analytics
-    op.drop_index('ix_records_year_month',  table_name='records')
-    op.drop_index('ix_records_company_id',  table_name='records')
-    op.drop_index('ix_records_employee',    table_name='records')
-    op.drop_index('ix_records_status',      table_name='records')
-    op.drop_index('ix_records_period_year', table_name='records')
-    op.drop_index('ix_records_period_month',table_name='records')
+    # Remove indexes added for gold analytics (if they were ever created)
+    op.drop_index('ix_records_year_month',   table_name='records', if_exists=True)
+    op.drop_index('ix_records_company_id',   table_name='records', if_exists=True)
+    op.drop_index('ix_records_employee',     table_name='records', if_exists=True)
+    op.drop_index('ix_records_status',       table_name='records', if_exists=True)
+    op.drop_index('ix_records_period_year',  table_name='records', if_exists=True)
+    op.drop_index('ix_records_period_month', table_name='records', if_exists=True)
 
 
 def downgrade() -> None:
