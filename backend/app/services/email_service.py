@@ -1,28 +1,48 @@
 import os
 import aiosmtplib
+import httpx
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-MAILTRAP_HOST     = os.getenv("MAILTRAP_HOST",     "sandbox.smtp.mailtrap.io")
-MAILTRAP_PORT     = int(os.getenv("MAILTRAP_PORT", "2525"))
+BREVO_API_KEY  = os.getenv("BREVO_API_KEY", "")
+MAILTRAP_HOST  = os.getenv("MAILTRAP_HOST",     "sandbox.smtp.mailtrap.io")
+MAILTRAP_PORT  = int(os.getenv("MAILTRAP_PORT", "2525"))
 MAILTRAP_USERNAME = os.getenv("MAILTRAP_USERNAME", "")
 MAILTRAP_PASSWORD = os.getenv("MAILTRAP_PASSWORD", "")
-MAIL_FROM         = os.getenv("MAIL_FROM",         "noreply@completcont.ro")
-MAIL_FROM_NAME    = os.getenv("MAIL_FROM_NAME",    "Complet Cont")
-FRONTEND_URL      = os.getenv("FRONTEND_URL",      "http://localhost:5173")
+MAIL_FROM      = os.getenv("MAIL_FROM",      "noreply@completcont.ro")
+MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "Complet Cont")
+FRONTEND_URL   = os.getenv("FRONTEND_URL",   "http://localhost:5173")
 
-# When MAILTRAP_USERNAME is not set, emails are only printed to console.
-# Set MAILTRAP_USERNAME + MAILTRAP_PASSWORD (or any SMTP creds) to actually send.
+API_ENABLED  = bool(BREVO_API_KEY)
 SMTP_ENABLED = bool(MAILTRAP_USERNAME and MAILTRAP_PASSWORD)
 
 
 async def _send(to_email: str, subject: str, html_body: str, plain_link: str) -> None:
-    # Always print the link so it works locally without any email setup
     print(f"\n{'='*60}")
     print(f"[EMAIL] To: {to_email}")
     print(f"[EMAIL] Subject: {subject}")
     print(f"[EMAIL] Link: {plain_link}")
     print(f"{'='*60}\n")
+
+    if API_ENABLED:
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+                    json={
+                        "sender":      {"name": MAIL_FROM_NAME, "email": MAIL_FROM},
+                        "to":          [{"email": to_email}],
+                        "subject":     subject,
+                        "htmlContent": html_body,
+                    },
+                    timeout=10,
+                )
+                r.raise_for_status()
+                print(f"[EMAIL] Sent via Brevo API (status {r.status_code}).")
+        except Exception as exc:
+            print(f"[EMAIL] Brevo API failed ({exc}); link was printed to console above.")
+        return
 
     if not SMTP_ENABLED:
         return
