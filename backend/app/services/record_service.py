@@ -47,9 +47,9 @@ def update(db: Session, record_id: int, data) -> Optional[Record]:
     record.firm = data.firm
     record.employee = data.employee
     record.status = data.status
-    record.period_month = data.periodMonth
-    record.period_year = data.periodYear
-    record.date_brought = data.dateBrought
+    record.periodMonth = data.periodMonth
+    record.periodYear = data.periodYear
+    record.dateBrought = data.dateBrought
     db.commit()
     db.refresh(record)
     return record
