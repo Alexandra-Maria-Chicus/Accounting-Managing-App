@@ -18,6 +18,7 @@ import useInactivityLogout from './useInactivityLogout'
 import CompanyPage from './CompanyPage';
 import InlineCharts from './InlineCharts';
 import ProfilePage from './ProfilePage';
+import ConfirmEmailLanding from './ConfirmEmailLanding';
 import { Container, Card, Table, Form, Row, Col, Button, Badge, Nav, Navbar } from 'react-bootstrap';
 
 const STATUS_STYLE = {
@@ -75,6 +76,7 @@ const [view, setView] = useState(() => {
     if (path.startsWith('/reset-password/')) return 'reset-password';
     if (path.startsWith('/magic/'))          return 'magic-login';
     if (path.startsWith('/verify-login-link/')) return 'verify-login-link';
+    if (path.startsWith('/confirm-email/'))  return 'confirm-email';
     const u = getStoredUser();
     if (!u) return 'home';
     if (u.role === 'client') return 'details';
@@ -421,6 +423,7 @@ const handleLoginSuccess = async (user) => {
       {view === 'reset-password' && <ResetPassword onGoToLogin={() => setView('login')} />}
       {view === 'magic-login' && <MagicLogin onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
       {view === 'verify-login-link' && <LinkVerifyLanding onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
+      {view === 'confirm-email' && <ConfirmEmailLanding onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
       
       {isAppView && (
         <>

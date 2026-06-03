@@ -69,6 +69,27 @@ async def _send(to_email: str, subject: str, html_body: str, plain_link: str) ->
         print(f"[EMAIL] SMTP failed ({exc}); link was printed to console above.")
 
 
+async def send_email_confirmation(to_email: str, token: str) -> None:
+    link = f"{FRONTEND_URL}/confirm-email/{token}"
+    html = f"""
+    <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+      <h2 style="color: #FF6B00;">Complet Cont</h2>
+      <p>Welcome! Click the button below to confirm your email address and activate your account.</p>
+      <a href="{link}"
+         style="display:inline-block; background:#FF6B00; color:#fff;
+                padding:12px 28px; border-radius:8px; text-decoration:none;
+                font-weight:bold; margin: 16px 0;">
+        Confirm My Account
+      </a>
+      <p style="color:#888; font-size:0.85rem;">
+        This link expires in 24 hours. If you did not register, ignore this email.
+      </p>
+      <p style="color:#bbb; font-size:0.8rem;">Or copy this link: {link}</p>
+    </div>
+    """
+    await _send(to_email, "Confirm your Complet Cont account", html, link)
+
+
 async def send_password_reset(to_email: str, token: str) -> None:
     link = f"{FRONTEND_URL}/reset-password/{token}"
     html = f"""

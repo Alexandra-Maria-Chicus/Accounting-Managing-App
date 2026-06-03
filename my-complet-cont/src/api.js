@@ -219,6 +219,10 @@ export function updateUserRole(userId, role) {
   return apiFetch(`/auth/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) });
 }
 
+export function confirmEmail(token) {
+  return apiFetch(`/auth/confirm-email/${token}`, { method: 'POST' });
+}
+
 export function fetchProfile() {
   return apiFetch('/auth/profile');
 }

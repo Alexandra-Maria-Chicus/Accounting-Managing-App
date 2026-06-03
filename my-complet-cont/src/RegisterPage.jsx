@@ -39,6 +39,7 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
   const [errors,    setErrors]    = useState({});
   const [serverErr, setServerErr] = useState('');
   const [loading,   setLoading]   = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   // Real-time uniqueness checks (only for codes that must be globally unique)
   const staffCodeCheck = useCodeCheck(staffCode, role === 'admin');
@@ -79,7 +80,7 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
     setErrors({});
     setLoading(true);
     try {
-      const user = await registerUser({
+      await registerUser({
         name:      fields.name,
         email:     fields.email,
         password:  fields.password,
@@ -88,7 +89,7 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
         staffCode: role !== 'client' ? staffCode : null,
         firmCode:  role === 'client' ? firmCode  : null,
       });
-      onLoginSuccess(user);
+      setConfirmed(true);
     } catch (err) {
       if (err.status === 409 && err.message?.toLowerCase().includes('email'))
         setErrors({ email: 'This email is already registered.' });
@@ -122,6 +123,24 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
     if (checkStatus === 'available') return <span className="ms-2 small text-success fw-bold">Available</span>;
     return null;
   };
+
+  if (confirmed) return (
+    <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f8f9fa' }}>
+      <Container style={{ maxWidth: '440px' }}>
+        <Card className="border-0 shadow-sm rounded-4 p-4 text-center">
+          <img src="/logo.png" alt="Logo" height="48" className="mx-auto mb-3" />
+          <h5 className="fw-bold mb-2" style={{ color: '#FF6B00' }}>Check your email</h5>
+          <p className="text-muted small mb-4">
+            We sent a confirmation link to <strong>{fields.email}</strong>.
+            Click it to activate your account. The link expires in 24 hours.
+          </p>
+          <Button variant="link" className="p-0 small shadow-none" style={{ color: '#6c757d' }} onClick={onGoToLogin}>
+            ← Back to login
+          </Button>
+        </Card>
+      </Container>
+    </div>
+  );
 
   return (
     <div className="page-fade-in min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f8f9fa' }}>

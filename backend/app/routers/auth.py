@@ -132,7 +132,7 @@ def check_code(
 
 
 @router.post("/register", status_code=201)
-def register(data: RegisterRequest, response: Response, db: Session = Depends(get_db)):
+async def register(data: RegisterRequest, response: Response, db: Session = Depends(get_db)):
     if data.role not in ("employee", "client", "admin"):
         raise HTTPException(status_code=400, detail="role must be 'employee', 'client', or 'admin'")
 
@@ -196,19 +196,34 @@ def register(data: RegisterRequest, response: Response, db: Session = Depends(ge
     db.commit()
     db.refresh(user)
 
-    token = auth_service.create_access_token(user, db)
+    confirm_token = auth_service.create_auth_token(db, user.email, "confirm_email", user.id, expires_minutes=24*60)
+    await email_service.send_email_confirmation(user.email, confirm_token)
+
+    return {"requires_confirmation": True, "message": "Check your email to confirm your account."}
+
+
+@router.post("/confirm-email/{token}")
+def confirm_email(token: str, response: Response, db: Session = Depends(get_db)):
+    db_token = auth_service.validate_auth_token(db, token, "confirm_email")
+    user = db.query(User).filter(User.id == db_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_token.used = True
+    db.commit()
+
+    access_token  = auth_service.create_access_token(user, db)
     refresh_token = auth_service.create_refresh_token(db, user)
     _set_refresh_cookie(response, refresh_token)
 
     return {
-        "access_token": token,
+        "access_token": access_token,
         "token_type":   "bearer",
         "id":           user.id,
         "email":        user.email,
         "name":         user.name,
-        "role":         data.role,
-        "permissions":  auth_service._get_permissions_for_role(db, role_obj.id),
-        "companyName":  company.name if company else None,
+        "role":         user.role.name,
+        "companyName":  user.company.name if user.company else None,
     }
 
 

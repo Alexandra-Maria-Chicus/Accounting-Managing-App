@@ -89,9 +89,9 @@ def create_refresh_token(db: Session, user: User) -> str:
 
 # ── One-time tokens (reset + magic) ──────────────────────────────────────────
 
-def create_auth_token(db: Session, email: str, token_type: str, user_id: Optional[int] = None) -> str:
+def create_auth_token(db: Session, email: str, token_type: str, user_id: Optional[int] = None, expires_minutes: int = 15) -> str:
     token_str = secrets.token_urlsafe(32)
-    expires   = datetime.now(timezone.utc) + timedelta(minutes=15)
+    expires   = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
     db_token  = AuthToken(
         token=token_str,
         user_id=user_id,
