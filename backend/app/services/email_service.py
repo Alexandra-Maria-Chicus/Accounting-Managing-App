@@ -34,14 +34,15 @@ async def _send(to_email: str, subject: str, html_body: str, plain_link: str) ->
     msg.attach(MIMEText(html_body, "html"))
 
     try:
+        _ssl = MAILTRAP_PORT == 465
         await aiosmtplib.send(
             msg,
             hostname=MAILTRAP_HOST,
             port=MAILTRAP_PORT,
             username=MAILTRAP_USERNAME,
             password=MAILTRAP_PASSWORD,
-            start_tls=True,
-            use_tls=False,
+            start_tls=not _ssl,
+            use_tls=_ssl,
         )
         print("[EMAIL] Sent via SMTP.")
     except Exception as exc:

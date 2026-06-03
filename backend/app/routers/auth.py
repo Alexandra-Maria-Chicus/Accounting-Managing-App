@@ -289,6 +289,12 @@ def logout(
         ).first()
         if db_token:
             db_token.used = True
+            # Invalidate any pending 2FA link for this user so old emails can't be reused
+            db.query(AuthToken).filter(
+                AuthToken.user_id == db_token.user_id,
+                AuthToken.type    == "2fa_link",
+                AuthToken.used    == False,
+            ).update({"used": True})
             db.commit()
 
     response.delete_cookie(REFRESH_COOKIE_NAME, path="/auth/refresh")
