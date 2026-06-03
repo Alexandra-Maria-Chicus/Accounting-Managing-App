@@ -1,14 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Container, Card, Spinner, Alert, Button } from 'react-bootstrap';
 import { validate2FALink, storeUser } from './api';
 
 export default function LinkVerifyLanding({ onLoginSuccess, onGoToLogin }) {
   const [error, setError] = useState('');
+  const calledRef = useRef(false);
+  const onLoginSuccessRef = useRef(onLoginSuccess);
+  useEffect(() => { onLoginSuccessRef.current = onLoginSuccess; });
 
   useEffect(() => {
+    if (calledRef.current) return;
+    calledRef.current = true;
+
     const parts = window.location.pathname.split('/');
     const token = parts[parts.length - 1];
-    
+
     if (!token) {
       setError('Missing tracking signature code token.');
       return;
@@ -18,12 +24,12 @@ export default function LinkVerifyLanding({ onLoginSuccess, onGoToLogin }) {
       .then((user) => {
         storeUser(user);
         window.history.replaceState({}, '', '/');
-        onLoginSuccess(user);
+        onLoginSuccessRef.current(user);
       })
       .catch((err) => {
         setError(err.message || 'This validation link is invalid or has expired.');
       });
-  }, [onLoginSuccess]);
+  }, []);
 
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f8f9fa' }}>
