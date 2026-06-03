@@ -230,7 +230,7 @@ def confirm_email(token: str, response: Response, db: Session = Depends(get_db))
 @router.get("/users")
 def list_users(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(auth_service.require_role("admin")),
+    current_user: dict = Depends(auth_service.get_current_user),
 ):
     org_id = current_user.get("organization_id")
     users = db.query(User).filter(User.organization_id == org_id).all()

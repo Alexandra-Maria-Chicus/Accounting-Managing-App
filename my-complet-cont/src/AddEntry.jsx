@@ -4,10 +4,10 @@ import { Form, Row, Col, Button, Card } from 'react-bootstrap';
 const monthNames = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
 
-function AddEntry({ onClose, onSave, companies = [] }) {
+function AddEntry({ onClose, onSave, companies = [], users = [], currentUser = null }) {
   const now = new Date();
   const [firmName, setFirmName] = useState('');
-  const [employee, setEmployee] = useState('Maria Chicus');
+  const [employee, setEmployee] = useState(currentUser?.name || '');
   const [acctMonth, setAcctMonth] = useState(now.getMonth());
   const [acctYear, setAcctYear] = useState(now.getFullYear());
   const [errors, setErrors] = useState({});
@@ -65,9 +65,10 @@ function AddEntry({ onClose, onSave, companies = [] }) {
               value={employee}
               onChange={(e) => setEmployee(e.target.value)}
             >
-              <option value="Maria Chicus">Maria Chicus</option>
-              <option value="Sarah Johnson">Sarah Johnson</option>
-              <option value="Michael Chen">Michael Chen</option>
+              <option value="">Select employee...</option>
+              {users.filter(u => u.role === 'admin' || u.role === 'employee').map(u => (
+                <option key={u.id} value={u.name}>{u.name}</option>
+              ))}
             </Form.Select>
           </Col>
 

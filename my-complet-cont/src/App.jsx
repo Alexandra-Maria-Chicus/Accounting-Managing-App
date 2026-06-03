@@ -173,8 +173,16 @@ const [view, setView] = useState(() => {
     } catch { /* non-critical */ }
   }, []);
 
+  const loadUsers = useCallback(async () => {
+    try {
+      const users = await api.fetchUsers();
+      setRegisteredUsers(users);
+    } catch { /* non-critical */ }
+  }, []);
+
   useEffect(() => { if (currentUser) loadAllEntries(); }, [loadAllEntries, currentUser]);
   useEffect(() => { if (currentUser) loadCompanies(); }, [loadCompanies, currentUser]);
+  useEffect(() => { if (currentUser && currentUser.role !== 'client') loadUsers(); }, [loadUsers, currentUser]);
 
   // On mount: flush any ops queued from a previous offline session
   useEffect(() => {
@@ -648,8 +656,8 @@ const handleLoginSuccess = async (user) => {
               </>
             )}
 
-            {view === 'add' && <AddEntry companies={companies} onClose={() => setView('table')} onSave={handleSave} />}
-            {view === 'edit' && <EditEntry entry={editingEntry} onClose={() => setView('table')} onSave={handleUpdate} companies={companies} />}
+            {view === 'add' && <AddEntry companies={companies} users={registeredUsers} currentUser={currentUser} onClose={() => setView('table')} onSave={handleSave} />}
+            {view === 'edit' && <EditEntry entry={editingEntry} onClose={() => setView('table')} onSave={handleUpdate} companies={companies} users={registeredUsers} />}
 
             {view === 'details' && selectedFirmData &&(
               <CompanyPage

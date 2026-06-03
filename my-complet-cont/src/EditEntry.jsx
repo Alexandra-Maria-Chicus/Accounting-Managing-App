@@ -5,7 +5,7 @@ import confetti from 'canvas-confetti';
 const monthNames = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
 
-function EditEntry({ entry, onClose, onSave, companies = [] }) {
+function EditEntry({ entry, onClose, onSave, companies = [], users = [] }) {
   const now = new Date();
   const [firmName, setFirmName] = useState(entry.firm);
   const [employee, setEmployee] = useState(entry.employee);
@@ -83,9 +83,9 @@ function EditEntry({ entry, onClose, onSave, companies = [] }) {
               value={employee}
               onChange={(e) => setEmployee(e.target.value)}
             >
-              <option value="Maria Chicus">Maria Chicus</option>
-              <option value="Sarah Johnson">Sarah Johnson</option>
-              <option value="Michael Chen">Michael Chen</option>
+              {(users || []).filter(u => u.role === 'admin' || u.role === 'employee').map(u => (
+                <option key={u.id} value={u.name}>{u.name}</option>
+              ))}
             </Form.Select>
           </Col>
 
