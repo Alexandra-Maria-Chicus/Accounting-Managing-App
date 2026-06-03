@@ -206,7 +206,7 @@ export function validateMagicLink(token) {
 }
 
 export async function validate2FALink(token) {
-  return apiFetch(`/auth/verify-2fa-link/${token}`);
+  return apiFetch(`/auth/verify-2fa-link/${token}`, { method: 'POST' });
 }
 
 // ── Admin user management ─────────────────────────────────────────────────────

@@ -97,7 +97,7 @@ async def login(data: LoginRequest, request: Request, response: Response, db: Se
     return {"requires_2fa": True, "message": "Check your email for a login link."}
 
 
-@router.get("/verify-2fa-link/{token}")
+@router.post("/verify-2fa-link/{token}")
 def verify_2fa_link(token: str, response: Response, db: Session = Depends(get_db)):
     db_token = auth_service.validate_auth_token(db, token, "2fa_link")
     user = db.query(User).filter(User.id == db_token.user_id).first()
