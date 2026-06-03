@@ -300,6 +300,69 @@ def me(current_user: dict = Depends(auth_service.get_current_user)):
     return current_user
 
 
+@router.get("/profile")
+def get_profile(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(auth_service.get_current_user),
+):
+    user = db.query(User).filter(User.id == current_user["id"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id":    user.id,
+        "name":  user.name,
+        "email": user.email,
+        "role":  user.role.name,
+        "organization": {
+            "id":         user.organization.id,
+            "name":       user.organization.name,
+            "staff_code": user.organization.staff_code if user.role.name == "admin" else None,
+        } if user.organization else None,
+        "company": {
+            "id":    user.company.id,
+            "name":  user.company.name,
+            "email": user.company.email,
+        } if user.company else None,
+    }
+
+
+@router.delete("/me", status_code=204)
+def delete_my_account(
+    response: Response,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(auth_service.get_current_user),
+):
+    from app.db.models.log import Log
+    from app.db.models.suspicious_user import SuspiciousUser
+
+    user = db.query(User).filter(User.id == current_user["id"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if current_user["role"] == "admin":
+        admin_role = db.query(Role).filter(Role.name == "admin").first()
+        admin_count = db.query(User).filter(
+            User.organization_id == user.organization_id,
+            User.role_id == admin_role.id,
+        ).count()
+        if admin_count <= 1:
+            raise HTTPException(
+                status_code=403,
+                detail="You are the only admin in your organisation. Promote another user to admin before deleting your account.",
+            )
+
+    # Preserve audit trail — nullify FK, keep the rows
+    db.query(Log).filter(Log.user_id == user.id).update({"user_id": None})
+    db.query(SuspiciousUser).filter(SuspiciousUser.user_id == user.id).update({"user_id": None})
+    # Remove auth tokens — they are useless without the user
+    db.query(AuthToken).filter(AuthToken.user_id == user.id).delete()
+
+    db.delete(user)
+    db.commit()
+    response.delete_cookie(REFRESH_COOKIE_NAME, path="/auth/refresh")
+    return None
+
+
 @router.post("/forgot-password")
 async def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     user = auth_service.get_user_by_email(db, data.email)

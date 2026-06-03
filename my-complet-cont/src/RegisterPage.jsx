@@ -33,7 +33,7 @@ function useCodeCheck(code, enabled) {
 export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
   const [role,      setRole]      = useState('employee');
   const [fields,    setFields]    = useState({ name: '', email: '', password: '', confirm: '' });
-  const [staffCode, setStaffCode] = useState('');
+  const [staffCode, setStaffCode] = useState('STAFF-2026');
   const [firmCode,  setFirmCode]  = useState('');
   const [orgName,   setOrgName]   = useState('');
   const [errors,    setErrors]    = useState({});
@@ -146,7 +146,7 @@ export default function RegisterPage({ onGoToLogin, onLoginSuccess }) {
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => { setRole(opt.value); setErrors({}); setServerErr(''); setStaffCode(''); setFirmCode(''); setAdminCode(''); setOrgName(''); }}
+                    onClick={() => { setRole(opt.value); setErrors({}); setServerErr(''); setStaffCode(''); setFirmCode(''); setOrgName(''); }}
                     className="flex-fill py-2 rounded-3 border fw-bold small"
                     style={{
                       backgroundColor: role === opt.value ? '#FF6B00' : '#f8f9fa',

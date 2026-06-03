@@ -17,6 +17,7 @@ import { storeUser, getStoredUser, clearUser, fetchCurrentUser, logoutUser } fro
 import useInactivityLogout from './useInactivityLogout'
 import CompanyPage from './CompanyPage';
 import InlineCharts from './InlineCharts';
+import ProfilePage from './ProfilePage';
 import { Container, Card, Table, Form, Row, Col, Button, Badge, Nav, Navbar } from 'react-bootstrap';
 
 const STATUS_STYLE = {
@@ -264,6 +265,12 @@ const handleLoginSuccess = async (user) => {
     setView('home');
   };
 
+  const handleAccountDeleted = async () => {
+    clearUser();
+    setCurrentUser(null);
+    setView('home');
+  };
+
   useInactivityLogout(handleLogout, !!currentUser);
 
   useEffect(() => {
@@ -460,7 +467,12 @@ const handleLoginSuccess = async (user) => {
     </Nav>
   )}
   <Nav className={`align-items-center d-flex gap-3 mt-2 mt-lg-0 ${isClient ? 'ms-auto' : ''}`}>
-    <div className="d-flex align-items-center gap-2">
+    <button
+      className="d-flex align-items-center gap-2 border-0 bg-transparent p-0"
+      style={{ cursor: 'pointer' }}
+      onClick={() => setView('profile')}
+      title="My profile"
+    >
       <img
         src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || 'User')}&background=FF6B00&color=fff`}
         alt="Profile" className="rounded-circle border" width="36" height="36"
@@ -469,7 +481,7 @@ const handleLoginSuccess = async (user) => {
         <span className="fw-bold d-block" style={{ fontSize: '0.85rem', color: '#1a1a1a' }}>{currentUser?.name || 'User'}</span>
         <span className="text-muted" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>{currentUser?.role}</span>
       </div>
-    </div>
+    </button>
     <Button variant="link" className="p-0 ms-1 shadow-none d-flex align-items-center gap-1 fw-semibold" title="Messages"
       style={{ color: showChat ? '#FF6B00' : '#6c757d', fontSize: '0.82rem', textDecoration: 'none' }}
       onClick={() => setShowChat(prev => !prev)}>
@@ -659,6 +671,13 @@ const handleLoginSuccess = async (user) => {
               />
             )}
             {view === 'logs' && isAdmin && <AdminLogs />}
+
+            {view === 'profile' && (
+              <ProfilePage
+                onDeleted={handleAccountDeleted}
+                onBack={() => setView(currentUser?.role === 'client' ? 'details' : 'table')}
+              />
+            )}
 
           </Container>
         </>

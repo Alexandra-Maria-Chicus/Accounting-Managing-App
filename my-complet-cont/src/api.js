@@ -219,6 +219,14 @@ export function updateUserRole(userId, role) {
   return apiFetch(`/auth/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) });
 }
 
+export function fetchProfile() {
+  return apiFetch('/auth/profile');
+}
+
+export function deleteAccount() {
+  return apiFetch('/auth/me', { method: 'DELETE' });
+}
+
 // ── Logs ──────────────────────────────────────────────────────────────────────
 
 export function fetchLogs(limit = 100) {
