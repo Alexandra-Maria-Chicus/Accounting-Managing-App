@@ -204,13 +204,19 @@ async def register(data: RegisterRequest, response: Response, db: Session = Depe
 
 @router.post("/confirm-email/{token}")
 def confirm_email(token: str, response: Response, db: Session = Depends(get_db)):
-    db_token = auth_service.validate_auth_token(db, token, "confirm_email")
+    db_token = db.query(AuthToken).filter(AuthToken.token == token, AuthToken.type == "confirm_email").first()
+    if not db_token:
+        raise HTTPException(status_code=400, detail="Invalid confirmation link")
+    if datetime.now(timezone.utc) > db_token.expires_at.replace(tzinfo=timezone.utc):
+        raise HTTPException(status_code=400, detail="This confirmation link has expired")
+    # Idempotent: if a scanner already consumed it, still let the user through
+    if not db_token.used:
+        db_token.used = True
+        db.commit()
+
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    db_token.used = True
-    db.commit()
 
     access_token  = auth_service.create_access_token(user, db)
     refresh_token = auth_service.create_refresh_token(db, user)
