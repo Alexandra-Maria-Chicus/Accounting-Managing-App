@@ -431,7 +431,7 @@ const handleLoginSuccess = async (user) => {
       {view === 'reset-password' && <ResetPassword onGoToLogin={() => setView('login')} />}
       {view === 'magic-login' && <MagicLogin onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
       {view === 'verify-login-link' && <LinkVerifyLanding onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
-      {view === 'confirm-email' && <ConfirmEmailLanding onLoginSuccess={handleLoginSuccess} onGoToLogin={() => setView('login')} />}
+      {view === 'confirm-email' && <ConfirmEmailLanding onGoToLogin={() => setView('login')} />}
       
       {isAppView && (
         <>

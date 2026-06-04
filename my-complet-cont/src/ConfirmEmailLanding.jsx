@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Container, Card, Spinner, Alert, Button } from 'react-bootstrap';
-import { confirmEmail, storeUser } from './api';
+import { confirmEmail } from './api';
 
-export default function ConfirmEmailLanding({ onLoginSuccess, onGoToLogin }) {
+export default function ConfirmEmailLanding({ onGoToLogin }) {
   const [error, setError] = useState('');
   const calledRef = useRef(false);
-  const onLoginSuccessRef = useRef(onLoginSuccess);
-  useEffect(() => { onLoginSuccessRef.current = onLoginSuccess; });
+  const onGoToLoginRef = useRef(onGoToLogin);
+  useEffect(() => { onGoToLoginRef.current = onGoToLogin; });
 
   useEffect(() => {
     if (calledRef.current) return;
@@ -17,10 +17,9 @@ export default function ConfirmEmailLanding({ onLoginSuccess, onGoToLogin }) {
     if (!token) { setError('Missing token.'); return; }
 
     confirmEmail(token)
-      .then((user) => {
-        storeUser(user);
+      .then(() => {
         window.history.replaceState({}, '', '/');
-        onLoginSuccessRef.current(user);
+        onGoToLoginRef.current();
       })
       .catch((err) => {
         setError(err.message || 'This link is invalid or has already been used.');
